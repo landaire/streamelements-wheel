@@ -4,9 +4,11 @@ export interface AudioEngine {
 }
 
 const TICK_FREQ_HZ = 1100; // short high click, audible over a spin
-const TICK_MS = 30;
-const CHIME_FREQ_HZ = 660;
-const CHIME_MS = 220;
+const TICK_MS = 30; // duration of tick pulse
+const CHIME_FREQ_HZ = 660; // lower frequency for win chime
+const CHIME_MS = 220; // longer duration for audible chime
+const GAIN_PEAK = 0.2; // initial gain to avoid clipping
+const GAIN_FLOOR = 0.0001; // exponential-ramp target; must be > 0
 
 export function createAudio(ctxFactory: () => AudioContext, cfg: { winSound?: string | undefined }): AudioEngine {
   let ctx: AudioContext | undefined;
@@ -18,8 +20,8 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: { winSound?: st
     const gain = c.createGain();
     osc.type = "square";
     osc.frequency.setValueAtTime(freq, c.currentTime);
-    gain.gain.setValueAtTime(0.2, c.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.0001, c.currentTime + ms / 1000);
+    gain.gain.setValueAtTime(GAIN_PEAK, c.currentTime);
+    gain.gain.exponentialRampToValueAtTime(GAIN_FLOOR, c.currentTime + ms / 1000);
     osc.connect(gain);
     gain.connect(c.destination);
     osc.start();
