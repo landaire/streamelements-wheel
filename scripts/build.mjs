@@ -448,8 +448,20 @@ function demoHtml() {
       hint.textContent = field.hint;
       row.appendChild(hint);
     }
-    controls[field.key] = { field: field, el: input };
+    controls[field.key] = { field: field, el: input, row: row };
   });
+
+  // Keep the color panel simple: only the two main colors show in Auto mode; the nine
+  // individual pickers show only in Custom mode.
+  function syncColorVisibility() {
+    var scheme = controls.colorScheme ? controls.colorScheme.el.value : "auto";
+    var autoKeys = ["colorPrimary", "colorSecondary"];
+    var customKeys = ["colorSliceEven", "colorSliceOdd", "colorSliceBorder", "colorRim", "colorHub", "colorHubInner", "colorPlate", "colorTitle", "colorEntry"];
+    autoKeys.forEach(function (k) { if (controls[k]) controls[k].row.style.display = scheme === "auto" ? "" : "none"; });
+    customKeys.forEach(function (k) { if (controls[k]) controls[k].row.style.display = scheme === "custom" ? "" : "none"; });
+  }
+  if (controls.colorScheme) controls.colorScheme.el.addEventListener("change", syncColorVisibility);
+  syncColorVisibility();
 
   var editorGroupBody = groupBody("Wheel Editor");
   editorGroupBody.insertAdjacentHTML(
