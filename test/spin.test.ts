@@ -1,7 +1,17 @@
 import { describe, it, expect } from "vitest";
 import { deg, weight, sliceIndex, normalizeDeg } from "../src/model/units.js";
 import { layout } from "../src/model/geometry.js";
-import { resolveLanding, nextRotation, pickRestAngle } from "../src/model/spin.js";
+import {
+  resolveLanding,
+  nextRotation,
+  pickRestAngle,
+  pickForce,
+  spinTurns,
+  forceBucket,
+  FORCE_BUCKETS,
+  SPIN_TURNS_MIN,
+  SPIN_TURNS_MAX,
+} from "../src/model/spin.js";
 import type { Slice } from "../src/config/slices.js";
 
 const mk = (weights: number[]): Slice[] =>
@@ -78,6 +88,49 @@ describe("spin resolution", () => {
       if (r.kind === "winner" && (r.slice as number) === 0) hasWinner0 = true;
     }
     expect(hasWinner0).toBe(false);
+  });
+
+  it("pickForce: variance 0 is always neutral 0.5", () => {
+    for (const r of [0, 0.5, 0.999]) {
+      expect(pickForce(() => r, 0) as number).toBeCloseTo(0.5);
+    }
+  });
+
+  it("pickForce: variance spreads force around 0.5 within [0,1]", () => {
+    expect(pickForce(() => 0, 1) as number).toBeCloseTo(0); // 0.5 + (0-0.5)*1
+    expect(pickForce(() => 1, 1) as number).toBeCloseTo(1); // 0.5 + (1-0.5)*1
+    // partial variance narrows the spread
+    expect(pickForce(() => 0, 0.6) as number).toBeCloseTo(0.2);
+    expect(pickForce(() => 1, 0.6) as number).toBeCloseTo(0.8);
+  });
+
+  it("spinTurns: rises with force, stays an integer inside the configured range", () => {
+    const lo = spinTurns(pickForce(() => 0, 1));
+    const hi = spinTurns(pickForce(() => 1, 1));
+    expect(lo).toBe(SPIN_TURNS_MIN);
+    expect(hi).toBe(SPIN_TURNS_MAX);
+    expect(Number.isInteger(lo) && Number.isInteger(hi)).toBe(true);
+    expect(hi).toBeGreaterThan(lo);
+    // nextRotation still lands exactly on target with these whole-turn counts
+    for (const turns of [lo, hi]) {
+      const R = nextRotation(0, deg(45), turns);
+      expect(normalizeDeg(deg(90 - R)) as number).toBeCloseTo(45);
+    }
+  });
+
+  it("forceBucket: monotonic, spans 0..FORCE_BUCKETS-1, and each bucket names a defined keyframe", () => {
+    expect(forceBucket(pickForce(() => 0, 1))).toBe(0); // force 0 -> calmest curve
+    expect(forceBucket(pickForce(() => 1, 1))).toBe(FORCE_BUCKETS - 1); // force 1 -> most suspenseful
+    expect(forceBucket(pickForce(() => 0.5, 1))).toBe(Math.round(0.5 * (FORCE_BUCKETS - 1)));
+    // monotonic non-decreasing across the force range
+    let prev = -1;
+    for (let i = 0; i <= 10; i++) {
+      const b = forceBucket(pickForce(() => i / 10, 1));
+      expect(b).toBeGreaterThanOrEqual(prev);
+      expect(b).toBeGreaterThanOrEqual(0);
+      expect(b).toBeLessThan(FORCE_BUCKETS);
+      prev = b;
+    }
   });
 
   it("small slice can win when seamBandDeg is 0", () => {

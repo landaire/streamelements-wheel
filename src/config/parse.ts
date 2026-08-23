@@ -23,6 +23,7 @@ export interface WheelConfig {
   spinningText: string;
   magnetism: boolean;
   seamBandDeg: Degrees;
+  spinForceVariance: number; // 0..1: how much spin force (turns + decel curve) varies per spin
   respinText: string;
   spinCommand: string;
   scheme: ColorScheme;
@@ -134,6 +135,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       spinningText: str(fieldData.spinningText, FIELD_DEFAULTS.spinningText as string),
       magnetism: bool(fieldData.magnetism, FIELD_DEFAULTS.magnetism as boolean),
       seamBandDeg: deg(num(fieldData.seamBand, FIELD_DEFAULTS.seamBand as number)),
+      spinForceVariance: Math.max(0, Math.min(1, num(fieldData.spinForceVariance, FIELD_DEFAULTS.spinForceVariance as number))),
       respinText: str(fieldData.respinText, FIELD_DEFAULTS.respinText as string),
       spinCommand: str(fieldData.spinCommand, FIELD_DEFAULTS.spinCommand as string),
       scheme: resolveScheme(fieldData),

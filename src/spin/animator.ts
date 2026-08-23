@@ -4,7 +4,9 @@ import { layout } from "../model/geometry.js";
 import {
   resolveLanding,
   pickRestAngle,
-  pickSpins,
+  pickForce,
+  spinTurns,
+  forceBucket,
   nextRotation,
   type SpinResult,
   type Rng,
@@ -89,7 +91,10 @@ export function createAnimator(
     // snapped slice center, and the animation must target that, not the raw rest angle.
     const restAngle = pickRestAngle(rng);
     const result = resolveLanding(laid, restAngle, { magnetism: cfg.magnetism, seamBandDeg: cfg.seamBandDeg });
-    const spins = pickSpins(rng);
+    // A random per-spin force varies momentum and the deceleration curve within a fixed
+    // duration, so some spins keep going longer before they stop.
+    const force = pickForce(rng, cfg.spinForceVariance);
+    const spins = spinTurns(force);
     const from = rotation;
     const to = nextRotation(rotation, result.restAngle, spins);
     const windup = from - WINDUP_DEG;
@@ -98,6 +103,9 @@ export function createAnimator(
     dom.wheel.style.setProperty("--spin-windup", windup + "deg");
     dom.wheel.style.setProperty("--spin-to", to + "deg");
     dom.wheel.style.setProperty("--spin-duration", cfg.spinDurationSec + "s");
+    // Select the deceleration curve by force; the timing function is baked into the named
+    // keyframe rule because a per-keyframe timing function cannot read a CSS var.
+    dom.wheel.style.animationName = "wheel-spin-" + forceBucket(force);
     // The resting transform (rotate(var(--spin-degree))) must already equal the final
     // value: once is-spinning is removed at finish(), the keyframe animation's 100%
     // frame is replaced by this resting value, and it must match or the wheel jumps.
