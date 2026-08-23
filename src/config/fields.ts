@@ -56,6 +56,14 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "soundTick", type: "sound-input", label: "Tick sound", value: "", group: "Sounds" },
   { key: "disableSound", type: "checkbox", label: "Mute all sounds", value: false, group: "Sounds" },
   { key: "disableTickSound", type: "checkbox", label: "Disable tick sound", value: false, group: "Sounds" },
+  { key: "enableCommands", type: "checkbox", label: "Enable chat commands", value: true, group: "Commands" },
+  { key: "wheelCommand", type: "text", label: "Base command", value: "!wheel", group: "Commands", hint: "Subcommands: spin, add <text>, remove <text>, reset, pause, resume, list." },
+  { key: "commandPermission", type: "dropdown", label: "Command permission", value: "mods", options: { mods: "Broadcaster + Mods", broadcaster: "Broadcaster only" }, group: "Commands" },
+  { key: "enableAddEntryReward", type: "checkbox", label: "Enable channel-point add-entry reward", value: false, group: "Channel Rewards" },
+  { key: "addEntryRewardName", type: "text", label: "Reward name", value: "Add Wheel Entry", group: "Channel Rewards", hint: "Must match the channel-point reward's title exactly (case-insensitive)." },
+  { key: "addEntrySource", type: "dropdown", label: "Entry source", value: "input", options: { input: "Redeemer's input text", username: "Redeemer's username" }, group: "Channel Rewards" },
+  { key: "addEntryMax", type: "number", label: "Max added entries (0 = unlimited)", value: 0, group: "Channel Rewards" },
+  { key: "addEntryOnePerUser", type: "checkbox", label: "One entry per user", value: true, group: "Channel Rewards" },
 ];
 
 export const FIELD_DEFAULTS: Readonly<Record<string, FieldValue>> = Object.freeze(

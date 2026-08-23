@@ -19,6 +19,7 @@ export interface SpinHooks {
 export interface Animator {
   spin(): void;
   isSpinning(): boolean;
+  currentRotationDeg(): number;
 }
 
 const SETTLE_GRACE_MS = 50; // fallback past animationend for headless environments
@@ -71,9 +72,12 @@ export function createAnimator(
   cfg: WheelConfig,
   hooks: SpinHooks,
   rng: Rng = Math.random,
+  // Seeds the rotation accumulator so a controller rebuild (new DOM, new animator) can
+  // carry rotation forward instead of visually snapping back to 0.
+  initialRotationDeg = 0,
 ): Animator {
   const laid = layout(cfg.slices);
-  let rotation = 0;
+  let rotation = initialRotationDeg;
   let spinning = false;
 
   const spin = (): void => {
@@ -120,5 +124,5 @@ export function createAnimator(
     if (hooks.onTick) driveTicks(dom.wheel, laid.length, hooks.onTick, () => done);
   };
 
-  return { spin, isSpinning: () => spinning };
+  return { spin, isSpinning: () => spinning, currentRotationDeg: () => rotation };
 }

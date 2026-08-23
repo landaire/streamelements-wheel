@@ -1,22 +1,15 @@
 declare const __INLINE_CSS__: string;
 
-import type { EventReceivedDetail, WidgetLoadDetail } from "./se/types.js";
+import type { WidgetLoadDetail } from "./se/types.js";
 import type { ConfigError } from "./config/errors.js";
 import { parseConfig } from "./config/parse.js";
-import { buildWheel } from "./render/wheel.js";
-import { addChrome } from "./render/chrome.js";
-import { createAnimator } from "./spin/animator.js";
-import { createAudio, type AudioEngine } from "./audio/engine.js";
-import { createConfetti } from "./fx/confetti.js";
-import { consoleAnnounceSink } from "./se/sinks.js";
+import { buildWidget } from "./app/builder.js";
+import { createController, type WheelController } from "./app/controller.js";
 import { onEventReceived, onWidgetLoad } from "./se/bootstrap.js";
 import type { Rng } from "./model/spin.js";
 
 export { FIELD_DEFS, buildFieldsSchema } from "./config/fields.js";
 export { parseConfig } from "./config/parse.js";
-
-// Default confetti palette; configurable in a later phase.
-const CONFETTI_COLORS: [string, string, string] = ["#ffc3ce", "#f8acbb", "#ffe3c3"];
 
 function mountStyles(doc: Document): void {
   if (doc.getElementById("wheel-styles")) return;
@@ -37,6 +30,13 @@ export interface MountHandle {
   spinCommand: string;
 }
 
+function renderConfigErrorPanel(doc: Document, errors: ConfigError[]): void {
+  const panel = doc.createElement("div");
+  panel.className = "wheel-error";
+  panel.textContent = "Wheel config error: " + errors.map((e) => e.kind).join(", ");
+  doc.body.appendChild(panel);
+}
+
 export function mountWidget(
   doc: Document,
   detail: WidgetLoadDetail,
@@ -45,104 +45,49 @@ export function mountWidget(
   mountStyles(doc);
   const parsed = parseConfig(detail.fieldData);
   if (parsed.kind === "error") {
-    const panel = doc.createElement("div");
-    panel.className = "wheel-error";
-    panel.textContent = "Wheel config error: " + parsed.errors.map((e) => e.kind).join(", ");
-    doc.body.appendChild(panel);
+    renderConfigErrorPanel(doc, parsed.errors);
     return { error: parsed.errors };
   }
   const cfg = parsed.value;
+  const built = buildWidget(doc, cfg, opts);
 
-  const canvas = doc.createElement("canvas");
-  canvas.className = "confetti";
-  canvas.width = 500;
-  canvas.height = 500;
-
-  const dom = buildWheel(doc, cfg);
-  const chrome = addChrome(doc, dom, cfg);
-  dom.container.insertBefore(canvas, dom.container.firstChild);
-  // Apply the resolved color scheme's CSS variables onto the container (named palette
-  // or custom fields); overrides the :root fallback.
-  for (const [k, v] of Object.entries(cfg.scheme.vars)) dom.container.style.setProperty(k, v);
-
-  // No AudioContext in headless/jsdom environments; fall back to a no-op engine
-  // rather than constructing an AudioContext that doesn't exist there.
-  const audioCtxFactory =
-    opts.audioCtxFactory ?? (typeof AudioContext !== "undefined" ? () => new AudioContext() : undefined);
-  const audio: AudioEngine =
-    audioCtxFactory !== undefined
-      ? createAudio(audioCtxFactory, { winSound: cfg.winSound })
-      : { tick() {}, win() {} };
-
-  const confetti = createConfetti(
-    canvas,
-    CONFETTI_COLORS,
-    () => performance.now(),
-    (cb) => requestAnimationFrame(cb),
-  );
-  const announce = consoleAnnounceSink(chrome.setTitle, cfg.respinText);
-
-  const tickEnabled = !cfg.disableSound && !cfg.disableTickSound;
-  const animator = createAnimator(
-    dom,
-    cfg,
-    {
-      onStart: () => chrome.setTitle(cfg.spinningText),
-      ...(tickEnabled ? { onTick: () => audio.tick() } : {}),
-      onResult: (result) => {
-        if (result.kind === "winner") {
-          const text = cfg.slices[result.slice as number]!.text;
-          announce.winner(text);
-          if (!cfg.disableSound) audio.win();
-          if (!cfg.disableConfetti) confetti.fire();
-        } else {
-          announce.seam();
-        }
-      },
-    },
-    opts.rng,
-  );
-
-  doc.body.appendChild(dom.container);
+  doc.body.appendChild(built.container);
   // Fit hub text and slice labels now that the widget has real layout (addChrome's fit
   // ran before attach and no-oped); rAF covers a late first paint.
-  chrome.refit();
-  if (typeof requestAnimationFrame !== "undefined") requestAnimationFrame(() => chrome.refit());
-  return { root: dom.container, spin: () => animator.spin(), spinCommand: cfg.spinCommand };
+  built.refit();
+  if (typeof requestAnimationFrame !== "undefined") requestAnimationFrame(() => built.refit());
+  return { root: built.container, spin: () => built.spin(), spinCommand: cfg.spinCommand };
 }
 
 // Module-scoped SE mount state, populated once StreamElements dispatches onWidgetLoad.
-let seHandle: MountHandle | { error: ConfigError[] } | undefined;
+// The controller (not mountWidget) owns the live SE mount, since it needs mutable
+// slices for chat commands and channel-point redemptions; mountWidget stays a plain,
+// one-shot build for the demo/preview page.
+let controller: WheelController | undefined;
 let seChannel: WidgetLoadDetail["channel"];
-
-function isBroadcasterOrMod(data: NonNullable<NonNullable<EventReceivedDetail["event"]>["data"]>): boolean {
-  const nick = (data.nick ?? data.displayName ?? "").toLowerCase();
-  const isBroadcaster = nick.length > 0 && nick === (seChannel?.username ?? "").toLowerCase();
-  const isMod =
-    data.tags?.mod === "1" ||
-    /broadcaster|moderator/.test(String(data.tags?.badges ?? "")) ||
-    Boolean(data.badges && (data.badges.broadcaster || data.badges.moderator));
-  return isBroadcaster || isMod;
-}
 
 // Bound unconditionally: a window listener is harmless outside SE, and the demo/preview
 // page calls mountWidget directly without ever dispatching onWidgetLoad, so there is no
 // double-mount risk.
 onWidgetLoad((detail) => {
-  seHandle = mountWidget(document, detail);
+  mountStyles(document);
   seChannel = detail.channel;
+  const created = createController(document, document.body, detail);
+  if ("error" in created) {
+    renderConfigErrorPanel(document, created.error);
+    return;
+  }
+  controller = created;
 });
 
 onEventReceived((detail) => {
+  if (!controller) return;
+
   const isMessage = detail.listener === "message" || detail.event?.listener === "message";
   const data = detail.event?.data;
-  if (!isMessage || !data) return;
-
-  const text = (data.text ?? "").trim().toLowerCase();
-  if (!seHandle || !("spin" in seHandle)) return;
-  const command = seHandle.spinCommand.trim().toLowerCase();
-  if (text !== command) return;
-  if (!isBroadcasterOrMod(data)) return;
-
-  seHandle.spin();
+  if (isMessage && data && typeof data.text === "string") {
+    controller.handleChatMessage(data.text, data, seChannel?.username);
+    return;
+  }
+  controller.handleRedemption(detail);
 });

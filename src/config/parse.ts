@@ -8,6 +8,8 @@ import { FIELD_DEFAULTS } from "./fields.js";
 export type WheelStyle = "halfwheel" | "fullwheel";
 export type HubMode = "icon" | "image" | "text";
 export type HubTextStyle = "fit" | "curve";
+export type CommandPermission = "mods" | "broadcaster";
+export type AddEntrySource = "input" | "username";
 
 export interface WheelConfig {
   scale: number;
@@ -34,6 +36,14 @@ export interface WheelConfig {
   normalizeWeights: boolean;
   disableSound: boolean;
   disableTickSound: boolean;
+  enableCommands: boolean;
+  wheelCommand: string;
+  commandPermission: CommandPermission;
+  enableAddEntryReward: boolean;
+  addEntryRewardName: string;
+  addEntrySource: AddEntrySource;
+  addEntryMax: number; // 0 = unlimited
+  addEntryOnePerUser: boolean;
 }
 
 const str = (v: unknown, dflt: string): string => (typeof v === "string" ? v : dflt);
@@ -88,6 +98,20 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
         ? "fit"
         : (FIELD_DEFAULTS.hubTextStyle as HubTextStyle);
 
+  const commandPermission: CommandPermission =
+    fieldData.commandPermission === "broadcaster"
+      ? "broadcaster"
+      : fieldData.commandPermission === "mods"
+        ? "mods"
+        : (FIELD_DEFAULTS.commandPermission as CommandPermission);
+
+  const addEntrySource: AddEntrySource =
+    fieldData.addEntrySource === "username"
+      ? "username"
+      : fieldData.addEntrySource === "input"
+        ? "input"
+        : (FIELD_DEFAULTS.addEntrySource as AddEntrySource);
+
   // Defaults sourced from FIELD_DEFAULTS (src/config/fields.ts), the single source of
   // truth also used to generate the widget's fields.json schema.
   return {
@@ -117,6 +141,14 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       normalizeWeights,
       disableSound: bool(fieldData.disableSound, FIELD_DEFAULTS.disableSound as boolean),
       disableTickSound: bool(fieldData.disableTickSound, FIELD_DEFAULTS.disableTickSound as boolean),
+      enableCommands: bool(fieldData.enableCommands, FIELD_DEFAULTS.enableCommands as boolean),
+      wheelCommand: str(fieldData.wheelCommand, FIELD_DEFAULTS.wheelCommand as string),
+      commandPermission,
+      enableAddEntryReward: bool(fieldData.enableAddEntryReward, FIELD_DEFAULTS.enableAddEntryReward as boolean),
+      addEntryRewardName: str(fieldData.addEntryRewardName, FIELD_DEFAULTS.addEntryRewardName as string),
+      addEntrySource,
+      addEntryMax: num(fieldData.addEntryMax, FIELD_DEFAULTS.addEntryMax as number),
+      addEntryOnePerUser: bool(fieldData.addEntryOnePerUser, FIELD_DEFAULTS.addEntryOnePerUser as boolean),
     },
   };
 }
