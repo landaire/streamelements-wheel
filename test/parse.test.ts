@@ -18,6 +18,7 @@ describe("parseConfig", () => {
   });
   it("maps an explicit magnetism + seamBand", () => {
     const r = parseConfig({ ...base, magnetism: true, seamBand: 5 });
+    expect(r.kind).toBe("ok");
     if (r.kind === "ok") {
       expect(r.value.magnetism).toBe(true);
       expect(r.value.seamBandDeg as number).toBe(5);
@@ -25,6 +26,7 @@ describe("parseConfig", () => {
   });
   it("empty sound field becomes undefined, not empty string", () => {
     const r = parseConfig({ ...base, soundWin: "" });
+    expect(r.kind).toBe("ok");
     if (r.kind === "ok") expect(r.value.winSound).toBeUndefined();
   });
   it("errors when the slice list is missing", () => {
@@ -39,10 +41,12 @@ describe("parseConfig", () => {
   });
   it("coerces a stringified numeric field instead of dropping it", () => {
     const r = parseConfig({ sliceEntries: "A, B", spinDuration: "7" });
+    expect(r.kind).toBe("ok");
     if (r.kind === "ok") expect(r.value.spinDurationSec).toBe(7);
   });
   it("defaults spinCommand to !spin", () => {
     const r = parseConfig({ ...base });
+    expect(r.kind).toBe("ok");
     if (r.kind === "ok") expect(r.value.spinCommand).toBe("!spin");
   });
 });
