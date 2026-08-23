@@ -1,6 +1,6 @@
 import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
-import { readFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { genFields } from "./gen-fields.mjs";
 
 const watch = process.argv.includes("--watch");
@@ -39,4 +39,22 @@ if (serve) {
   await ctx.watch();
 } else {
   await esbuild.build(opts);
+  writeFileSync("dist/index.html", hostedHtml());
+}
+
+// Hosted demo page for GitHub Pages: root-relative ./wheel.js, sample fieldData.
+function hostedHtml() {
+  return `<!doctype html>
+<html><head><meta charset="utf-8" /><title>Spinning Wheel</title>
+<style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#1b1b22}button{position:fixed;top:12px;left:12px;z-index:10}</style>
+</head><body>
+<button id="spin">Spin</button>
+<script src="./wheel.js"></script>
+<script>
+  var fd = { sliceEntries: "Eat a lemon, Song request [5%], Ranked games, Draw subs [10], Push-ups, Mystery", wheelStyle: "halfwheel", wheelTitle: "50 points to spin", spinDuration: 5, magnetism: false, seamBand: 3, centerIcon: "heart", colorScheme: "sweetheart-original" };
+  var handle = window.Wheel.mountWidget(document, { fieldData: fd });
+  document.getElementById("spin").addEventListener("click", function(){ handle.spin && handle.spin(); });
+</script>
+</body></html>
+`;
 }
