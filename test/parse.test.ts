@@ -37,4 +37,12 @@ describe("parseConfig", () => {
     expect(r.kind).toBe("error");
     if (r.kind === "error") expect(r.errors.some((e) => e.kind === "bad-field-type")).toBe(true);
   });
+  it("coerces a stringified numeric field instead of dropping it", () => {
+    const r = parseConfig({ sliceEntries: "A, B", spinDuration: "7" });
+    if (r.kind === "ok") expect(r.value.spinDurationSec).toBe(7);
+  });
+  it("defaults spinCommand to !spin", () => {
+    const r = parseConfig({ ...base });
+    if (r.kind === "ok") expect(r.value.spinCommand).toBe("!spin");
+  });
 });

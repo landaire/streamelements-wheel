@@ -1,6 +1,6 @@
 declare const __INLINE_CSS__: string;
 
-import type { WidgetLoadDetail } from "./se/types.js";
+import type { EventReceivedDetail, WidgetLoadDetail } from "./se/types.js";
 import type { ConfigError } from "./config/errors.js";
 import { parseConfig } from "./config/parse.js";
 import { buildWheel } from "./render/wheel.js";
@@ -9,7 +9,11 @@ import { createAnimator } from "./spin/animator.js";
 import { createAudio, type AudioEngine } from "./audio/engine.js";
 import { createConfetti } from "./fx/confetti.js";
 import { consoleAnnounceSink } from "./se/sinks.js";
+import { onEventReceived, onWidgetLoad } from "./se/bootstrap.js";
 import type { Rng } from "./model/spin.js";
+
+// Default confetti palette; configurable in a later phase.
+const CONFETTI_COLORS: [string, string, string] = ["#ffc3ce", "#f8acbb", "#ffe3c3"];
 
 function mountStyles(doc: Document): void {
   if (doc.getElementById("wheel-styles")) return;
@@ -24,11 +28,17 @@ export interface MountOpts {
   audioCtxFactory?: () => AudioContext;
 }
 
+export interface MountHandle {
+  root: HTMLElement;
+  spin(): void;
+  spinCommand: string;
+}
+
 export function mountWidget(
   doc: Document,
   detail: WidgetLoadDetail,
   opts: MountOpts = {},
-): { root: HTMLElement; spin(): void } | { error: ConfigError[] } {
+): MountHandle | { error: ConfigError[] } {
   mountStyles(doc);
   const parsed = parseConfig(detail.fieldData);
   if (parsed.kind === "error") {
@@ -60,7 +70,7 @@ export function mountWidget(
 
   const confetti = createConfetti(
     canvas,
-    [cfg.scheme.kind === "custom" ? "#fff" : "#ffc3ce", "#f8acbb", "#ffe3c3"],
+    CONFETTI_COLORS,
     () => performance.now(),
     (cb) => requestAnimationFrame(cb),
   );
@@ -86,7 +96,41 @@ export function mountWidget(
   );
 
   doc.body.appendChild(dom.container);
-  return { root: dom.container, spin: () => animator.spin() };
+  return { root: dom.container, spin: () => animator.spin(), spinCommand: cfg.spinCommand };
 }
 
-// Live SE path is wired in a follow-up; preview drives mountWidget directly.
+// Module-scoped SE mount state, populated once StreamElements dispatches onWidgetLoad.
+let seHandle: MountHandle | { error: ConfigError[] } | undefined;
+let seChannel: WidgetLoadDetail["channel"];
+
+function isBroadcasterOrMod(data: NonNullable<NonNullable<EventReceivedDetail["event"]>["data"]>): boolean {
+  const nick = (data.nick ?? data.displayName ?? "").toLowerCase();
+  const isBroadcaster = nick.length > 0 && nick === (seChannel?.username ?? "").toLowerCase();
+  const isMod =
+    data.tags?.mod === "1" ||
+    /broadcaster|moderator/.test(String(data.tags?.badges ?? "")) ||
+    Boolean(data.badges && (data.badges.broadcaster || data.badges.moderator));
+  return isBroadcaster || isMod;
+}
+
+// Bound unconditionally: a window listener is harmless outside SE, and the demo/preview
+// page calls mountWidget directly without ever dispatching onWidgetLoad, so there is no
+// double-mount risk.
+onWidgetLoad((detail) => {
+  seHandle = mountWidget(document, detail);
+  seChannel = detail.channel;
+});
+
+onEventReceived((detail) => {
+  const isMessage = detail.listener === "message" || detail.event?.listener === "message";
+  const data = detail.event?.data;
+  if (!isMessage || !data) return;
+
+  const text = (data.text ?? "").trim().toLowerCase();
+  if (!seHandle || !("spin" in seHandle)) return;
+  const command = seHandle.spinCommand.trim().toLowerCase();
+  if (text !== command) return;
+  if (!isBroadcasterOrMod(data)) return;
+
+  seHandle.spin();
+});

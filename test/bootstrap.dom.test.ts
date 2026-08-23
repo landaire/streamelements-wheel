@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { onWidgetLoad, hasSEApi } from "../src/se/bootstrap.js";
+import { onWidgetLoad, onEventReceived, hasSEApi } from "../src/se/bootstrap.js";
 import { consoleAnnounceSink } from "../src/se/sinks.js";
 
 describe("se integration", () => {
@@ -8,6 +8,13 @@ describe("se integration", () => {
     onWidgetLoad(handler);
     const detail = { fieldData: { sliceEntries: "A,B" } };
     window.dispatchEvent(new CustomEvent("onWidgetLoad", { detail }));
+    expect(handler).toHaveBeenCalledWith(detail);
+  });
+  it("onEventReceived forwards the SE event detail to the handler", () => {
+    const handler = vi.fn();
+    onEventReceived(handler);
+    const detail = { listener: "message", event: { data: { text: "!spin" } } };
+    window.dispatchEvent(new CustomEvent("onEventReceived", { detail }));
     expect(handler).toHaveBeenCalledWith(detail);
   });
   it("reports SE_API presence", () => {

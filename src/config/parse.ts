@@ -19,6 +19,7 @@ export interface WheelConfig {
   magnetism: boolean;
   seamBandDeg: Degrees;
   respinText: string;
+  spinCommand: string;
   scheme: ColorScheme;
   centerIcon: string;
   winSound: string | undefined;
@@ -27,7 +28,12 @@ export interface WheelConfig {
 }
 
 const str = (v: unknown, dflt: string): string => (typeof v === "string" ? v : dflt);
-const num = (v: unknown, dflt: number): number => (typeof v === "number" && Number.isFinite(v) ? v : dflt);
+// SE may deliver number/slider fields as strings; coerce rather than drop the streamer's value.
+const num = (v: unknown, dflt: number): number => {
+  if (typeof v === "number" && Number.isFinite(v)) return v;
+  if (typeof v === "string" && v.trim().length > 0 && Number.isFinite(Number(v.trim()))) return Number(v.trim());
+  return dflt;
+};
 const bool = (v: unknown, dflt: boolean): boolean => (typeof v === "boolean" ? v : dflt);
 // Empty string is "no value" for optional text/sound fields; never store "".
 const opt = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
@@ -71,6 +77,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       magnetism: bool(fieldData.magnetism, FIELD_DEFAULTS.magnetism as boolean),
       seamBandDeg: deg(num(fieldData.seamBand, FIELD_DEFAULTS.seamBand as number)),
       respinText: str(fieldData.respinText, FIELD_DEFAULTS.respinText as string),
+      spinCommand: str(fieldData.spinCommand, FIELD_DEFAULTS.spinCommand as string),
       scheme: resolveScheme(fieldData),
       centerIcon: str(fieldData.centerIcon, FIELD_DEFAULTS.centerIcon as string),
       winSound: opt(fieldData.soundWin),
