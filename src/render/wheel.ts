@@ -90,6 +90,7 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
 
     const entry = el(doc, "entry");
     entry.style.setProperty("--entry-mid-deg", (sliceCenterDeg(l) as number) + "deg");
+    entry.dataset.sizeTurn = String(l.sizeTurn as number);
     const text = el(doc, "entry-text");
     text.textContent = cfg.slices[i]!.text;
     entry.appendChild(text);

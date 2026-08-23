@@ -4,7 +4,7 @@ import type { WheelConfig } from "../config/parse.js";
 export interface Chrome {
   title: HTMLElement;
   setTitle(text: string): void;
-  refitHub(): void;
+  refit(): void;
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -68,6 +68,49 @@ export function fitHubText(wrap: HTMLElement): void {
     else hi = mid;
   }
   inner.style.fontSize = lo + "px";
+}
+
+// Base entry font-size, matching --entry-font-size's default in wheel.css. Fit only
+// ever shrinks from here; there is no per-config entries font-size field yet.
+const BASE_ENTRY_FONT_PX = 15;
+
+// Auto-scales one slice label's font-size to fit within its slice, both radially (the
+// line length, capped by maxWidth so long text wraps) and tangentially (the stacked-line
+// height, capped by the slice's angular width at the label's radius). No-ops when R is 0
+// (no live layout yet, e.g. pre-attach or jsdom).
+export function fitEntryText(textEl: HTMLElement, sizeTurn: number, R: number): void {
+  if (!R) return;
+  const rText = 0.6 * R; // radius at which the label is centered
+  const radialLen = 0.56 * R; // available length along the radial line
+  const tangentialWidth = 2 * rText * Math.sin(sizeTurn * Math.PI) * 0.82; // available width across the slice
+  textEl.style.maxWidth = radialLen + "px";
+  let lo = 5;
+  let hi = BASE_ENTRY_FONT_PX;
+  for (let i = 0; i < 14; i++) {
+    const mid = (lo + hi) / 2;
+    textEl.style.fontSize = mid + "px";
+    const fits = textEl.scrollHeight <= tangentialWidth && textEl.scrollWidth <= radialLen;
+    if (fits) lo = mid;
+    else hi = mid;
+  }
+  textEl.style.fontSize = lo + "px";
+}
+
+// Refits every slice label against the wheel's live size. dom.container.clientWidth is
+// 0 before attach or under jsdom (no stylesheet layout), so this no-ops safely there,
+// same as fitHubText.
+export function refitEntries(dom: WheelDom): void {
+  const R = dom.container.clientWidth / 2;
+  if (!R) return;
+  for (const entry of dom.entries) {
+    const sizeTurnAttr = entry.dataset.sizeTurn;
+    if (!sizeTurnAttr) continue;
+    const sizeTurn = Number(sizeTurnAttr);
+    if (!Number.isFinite(sizeTurn)) continue;
+    const textEl = entry.querySelector<HTMLElement>(".entry-text");
+    if (!textEl) continue;
+    fitEntryText(textEl, sizeTurn, R);
+  }
 }
 
 // Curved hub text flows along a circular textPath. jsdom has no font metrics, so the
@@ -234,12 +277,13 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   dom.container.appendChild(titleWrap);
 
   const fitTextEl = centerpiece.querySelector<HTMLElement>(".hub-text-fit");
-  const refitHub = (): void => {
+  const refit = (): void => {
     if (fitTextEl) fitHubText(fitTextEl);
+    refitEntries(dom);
   };
-  refitHub();
-  if (typeof window !== "undefined" && fitTextEl) {
-    window.addEventListener("resize", refitHub);
+  refit();
+  if (typeof window !== "undefined") {
+    window.addEventListener("resize", refit);
   }
 
   return {
@@ -247,6 +291,6 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
     setTitle: (text: string): void => {
       title.textContent = text;
     },
-    refitHub,
+    refit,
   };
 }

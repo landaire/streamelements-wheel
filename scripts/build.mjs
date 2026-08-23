@@ -265,6 +265,8 @@ function demoHtml() {
     return null;
   }
 
+  // The hash only ever carries fields that differ from FIELD_DEFS defaults; merge it
+  // over the defaults so missing keys fall back rather than reading as undefined.
   var hashFieldData = loadFieldDataFromHash() || {};
   function initialValue(field) {
     return Object.prototype.hasOwnProperty.call(hashFieldData, field.key) ? hashFieldData[field.key] : field.value;
@@ -420,9 +422,22 @@ function demoHtml() {
     weightsBody.appendChild(readout);
   }
 
+  function diffFromDefaults(fieldData) {
+    var diff = {};
+    FIELD_DEFS.forEach(function (field) {
+      if (fieldData[field.key] !== field.value) diff[field.key] = fieldData[field.key];
+    });
+    return diff;
+  }
+
   function syncHash(fieldData) {
     try {
-      var encoded = toBase64Url(JSON.stringify(fieldData));
+      var diff = diffFromDefaults(fieldData);
+      if (Object.keys(diff).length === 0) {
+        history.replaceState(null, "", location.pathname + location.search);
+        return;
+      }
+      var encoded = toBase64Url(JSON.stringify(diff));
       history.replaceState(null, "", "#" + encoded);
     } catch (e) {
       // hash sync is best-effort; never block a remount over it
