@@ -1,0 +1,21 @@
+{
+  "name": "cleanroom-wheel",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "build": "node scripts/build.mjs",
+    "dev": "node scripts/build.mjs --watch --serve"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "jsdom": "^25.0.0",
+    "esbuild": "^0.24.0",
+    "tailwindcss": "^3.4.0",
+    "postcss": "^8.4.0",
+    "autoprefixer": "^10.4.0"
+  }
+}
