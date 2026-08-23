@@ -193,7 +193,7 @@ function buildEmeraldPointer(doc: Document): SVGElement {
 
   const defs = doc.createElementNS(SVG_NS, "defs");
   const gradients: [string, [string, string][]][] = [
-    ["bezel-" + uid, [["0%", "#f7e08a"], ["45%", "#c9962f"], ["100%", "#7a5716"]]],
+    ["bezel-" + uid, [["0%", "#eaffcf"], ["100%", "#9fe85a"]]], // top facet, kept green to match the reference plumbob (no gold cap)
     ["table-" + uid, [["0%", "#f3ffd9"], ["100%", "#b7f36a"]]],
     ["crown-l-" + uid, [["0%", "#b7f36a"], ["100%", "#5fbf3f"]]],
     ["crown-r-" + uid, [["0%", "#9fe85a"], ["100%", "#4a9f34"]]],
