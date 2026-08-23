@@ -1,7 +1,8 @@
 import { describe, it, expect } from "vitest";
 import { parseConfig } from "../src/config/parse.js";
+import type { FieldData } from "../src/se/types.js";
 
-const base = { sliceEntries: "A, B [3]" } as Record<string, unknown>;
+const base: FieldData = { sliceEntries: "A, B [3]" };
 
 describe("parseConfig", () => {
   it("parses a minimal valid config with schema defaults", () => {
