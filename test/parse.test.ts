@@ -113,3 +113,44 @@ describe("parseConfig", () => {
     if (r.kind === "ok") expect(r.value.slices.map((s) => s.weight as number)).toEqual([5, 10, 1]);
   });
 });
+
+describe("parseConfig: advancedConfig", () => {
+  const advanced = JSON.stringify({
+    categories: [{ id: "a", name: "A", weight: 1, color: "#112233" }],
+    items: [{ text: "x", weight: 1, categoryId: "a" }],
+  });
+
+  it("an empty (default) advancedConfig is identical to today's sliceEntries-only behavior", () => {
+    const withEmpty = parseConfig({ ...base, advancedConfig: "" });
+    const withoutField = parseConfig({ ...base });
+    expect(withEmpty.kind).toBe("ok");
+    expect(withoutField.kind).toBe("ok");
+    if (withEmpty.kind === "ok" && withoutField.kind === "ok") {
+      expect(withEmpty.value.slices.map((s) => s.text)).toEqual(["A", "B"]);
+      expect(withEmpty.value.slices).toEqual(withoutField.value.slices);
+      expect(withEmpty.value.slices.every((s) => s.color === undefined)).toBe(true);
+    }
+  });
+
+  it("a non-empty advancedConfig replaces sliceEntries entirely", () => {
+    const r = parseConfig({ sliceEntries: "Ignored, Also Ignored", advancedConfig: advanced });
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") {
+      expect(r.value.slices.map((s) => s.text)).toEqual(["x"]);
+      expect(r.value.slices[0]!.color).toBe("#112233");
+    }
+  });
+
+  it("invalid advancedConfig JSON produces a typed ConfigError, not a throw or silent default", () => {
+    expect(() => parseConfig({ ...base, advancedConfig: "{not json" })).not.toThrow();
+    const r = parseConfig({ ...base, advancedConfig: "{not json" });
+    expect(r.kind).toBe("error");
+    if (r.kind === "error") expect(r.errors.some((e) => e.kind === "bad-advanced-json")).toBe(true);
+  });
+
+  it("malformed advancedConfig structure produces a typed ConfigError", () => {
+    const r = parseConfig({ ...base, advancedConfig: JSON.stringify({ categories: [], items: [{ text: "x" }] }) });
+    expect(r.kind).toBe("error");
+    if (r.kind === "error") expect(r.errors.some((e) => e.kind === "bad-advanced-json")).toBe(true);
+  });
+});

@@ -5,6 +5,7 @@ export interface Slice {
   index: SliceIndex;
   text: string;
   weight: Weight;
+  color?: string; // set only by the advanced category path; sliceEntries slices leave it undefined
 }
 
 // percent: entry had [n%]; relative: entry had [n] with no %; default: no bracket at all.
@@ -22,7 +23,9 @@ export interface SliceEntry {
 
 const WEIGHT_RE = /\[\s*([0-9]*\.?[0-9]+)\s*(%)?\s*\]\s*$/;
 const DEFAULT_WEIGHT = 1; // an entry without a bracket carries unit weight
-const EPSILON_WEIGHT = 0.0001; // keeps an entry with a computed 0% share visible instead of degenerate
+// keeps an entry with a computed 0% share visible instead of degenerate; also reused
+// by config/advanced.ts for the same reason on the category-weighted path.
+export const EPSILON_WEIGHT = 0.0001;
 
 export function parseSliceList(raw: string): Parsed<SliceEntry[]> {
   const parts = raw.split(",").map((p) => p.trim()).filter((p) => p.length > 0);

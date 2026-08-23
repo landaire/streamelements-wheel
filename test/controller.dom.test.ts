@@ -210,3 +210,32 @@ describe("WheelController persistence", () => {
     expect(c.entries()).toEqual(["A", "B"]);
   });
 });
+
+describe("WheelController with advancedConfig", () => {
+  const advanced = JSON.stringify({
+    categories: [{ id: "a", name: "A", weight: 1 }],
+    items: [{ text: "x", weight: 1, categoryId: "a" }],
+  });
+
+  it("addEntry still works, appending as an Uncategorized item", () => {
+    const c = makeController({ advancedConfig: advanced });
+    expect(c.addEntry("Pizza", "viewer1").kind).toBe("added");
+    expect(c.entries()).toEqual(["x", "Pizza"]);
+  });
+
+  it("!wheel add via chat command still renders the extra", () => {
+    const c = makeController({ advancedConfig: advanced, wheelCommand: "!wheel" });
+    c.handleChatMessage("!wheel add Tacos", chatData("mod1", true), "streamer");
+    expect(c.entries()).toEqual(["x", "Tacos"]);
+  });
+
+  it("removeEntry and resetEntries still work on advancedConfig extras", () => {
+    const c = makeController({ advancedConfig: advanced });
+    c.addEntry("Pizza", "viewer1");
+    expect(c.removeEntry("Pizza")).toEqual({ kind: "removed" });
+    expect(c.entries()).toEqual(["x"]);
+    c.addEntry("Tacos", "viewer2");
+    c.resetEntries();
+    expect(c.entries()).toEqual(["x"]);
+  });
+});

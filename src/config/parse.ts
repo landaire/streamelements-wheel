@@ -1,4 +1,5 @@
 import { parseSliceList, resolveWeights, type Slice } from "./slices.js";
+import { parseAdvancedConfig, resolveAdvancedWeights } from "./advanced.js";
 import type { ConfigError, Parsed } from "./errors.js";
 import { deg, type Degrees } from "../model/units.js";
 import type { FieldData } from "../se/types.js";
@@ -62,8 +63,14 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
   let slices: Slice[] = [];
 
   const normalizeWeights = bool(fieldData.normalizeWeights, FIELD_DEFAULTS.normalizeWeights as boolean);
+  const advancedConfigRaw = str(fieldData.advancedConfig, FIELD_DEFAULTS.advancedConfig as string).trim();
 
-  if (fieldData.sliceEntries === undefined) {
+  if (advancedConfigRaw.length > 0) {
+    // advancedConfig, when set, replaces the simple slice list entirely.
+    const parsedAdvanced = parseAdvancedConfig(advancedConfigRaw);
+    if (parsedAdvanced.kind === "error") errors.push(...parsedAdvanced.errors);
+    else slices = resolveAdvancedWeights(parsedAdvanced.value);
+  } else if (fieldData.sliceEntries === undefined) {
     errors.push({ kind: "missing-field", key: "sliceEntries" });
   } else if (typeof fieldData.sliceEntries === "string") {
     const parsed = parseSliceList(fieldData.sliceEntries);

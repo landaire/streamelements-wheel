@@ -73,6 +73,33 @@ describe("buildWheel", () => {
   });
 });
 
+describe("buildWheel: category colors", () => {
+  it("uses each slice's color as its fill when advancedConfig sets one", () => {
+    const advanced = JSON.stringify({
+      categories: [
+        { id: "red", name: "Red", weight: 1, color: "#ff0000" },
+        { id: "blue", name: "Blue", weight: 1, color: "#0000ff" },
+      ],
+      items: [
+        { text: "r", weight: 1, categoryId: "red" },
+        { text: "b", weight: 1, categoryId: "blue" },
+      ],
+    });
+    const r = parseConfig({ sliceEntries: "unused", advancedConfig: advanced });
+    if (r.kind !== "ok") throw new Error("bad cfg");
+    const dom = buildWheel(document, r.value);
+    const fills = dom.slices.map((s) => s.getAttribute("fill"));
+    expect(fills).toContain("#ff0000");
+    expect(fills).toContain("#0000ff");
+  });
+
+  it("leaves the alternating var(--slice-bg-*) fill for slices without a color (sliceEntries path)", () => {
+    const dom = buildWheel(document, cfg);
+    expect(dom.slices[0]!.getAttribute("fill")).toBe("var(--slice-bg-even)");
+    expect(dom.slices[1]!.getAttribute("fill")).toBe("var(--slice-bg-odd)");
+  });
+});
+
 describe("hub rendering", () => {
   it("renders hubMode image as an <img>", () => {
     const r = parseConfig({

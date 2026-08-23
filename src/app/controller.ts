@@ -1,6 +1,7 @@
-import type { WidgetLoadDetail, EventReceivedDetail, ChatEventData } from "../se/types.js";
+import type { WidgetLoadDetail, EventReceivedDetail, ChatEventData, FieldData } from "../se/types.js";
 import type { ConfigError } from "../config/errors.js";
 import { parseConfig, type WheelConfig } from "../config/parse.js";
+import { parseAdvancedConfig, withExtraItems } from "../config/advanced.js";
 import { buildWidget, type BuiltWidget } from "./builder.js";
 import { hasSEApi } from "../se/bootstrap.js";
 import { seStore, memoryStore, type Store } from "../se/store.js";
@@ -79,6 +80,8 @@ export function createController(
   if (baseParsed.kind === "error") return { error: baseParsed.errors };
   const baseCfg = baseParsed.value;
   const baseSliceEntries = typeof detail.fieldData.sliceEntries === "string" ? detail.fieldData.sliceEntries : "";
+  const baseAdvancedConfig = typeof detail.fieldData.advancedConfig === "string" ? detail.fieldData.advancedConfig.trim() : "";
+  const advancedActive = baseAdvancedConfig.length > 0;
 
   const store = opts.store ?? (hasSEApi() ? seStore() : memoryStore());
   const announceList = opts.announceList ?? consoleListSink();
@@ -96,11 +99,25 @@ export function createController(
   slot.className = "wheel-controller-slot";
   parent.appendChild(slot);
 
+  // With advancedConfig active, extras are appended as Uncategorized items (weight 1)
+  // instead of into the sliceEntries string, so "!wheel add X" keeps working under the
+  // category path too.
+  function effectiveFieldData(): FieldData {
+    if (!advancedActive) {
+      return { ...detail.fieldData, sliceEntries: effectiveSliceEntries(baseSliceEntries, extras) };
+    }
+    if (extras.length === 0) return { ...detail.fieldData };
+    const parsedAdvanced = parseAdvancedConfig(baseAdvancedConfig);
+    // baseCfg already parsed ok from this same string, so this cannot fail in practice.
+    if (parsedAdvanced.kind !== "ok") return { ...detail.fieldData };
+    const withExtras = withExtraItems(parsedAdvanced.value, extras.map((e) => e.text));
+    return { ...detail.fieldData, advancedConfig: JSON.stringify(withExtras) };
+  }
+
   function currentCfg(): WheelConfig {
-    const effectiveFieldData = { ...detail.fieldData, sliceEntries: effectiveSliceEntries(baseSliceEntries, extras) };
-    const parsed = parseConfig(effectiveFieldData);
-    // baseCfg already parsed ok from a non-empty sliceEntries string; appending extras
-    // can only add entries, so this can never fail.
+    const parsed = parseConfig(effectiveFieldData());
+    // appending extras can only add entries onto an already-valid base config, so this
+    // can never fail.
     return parsed.kind === "ok" ? parsed.value : baseCfg;
   }
 

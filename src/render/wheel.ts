@@ -103,8 +103,12 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
     const path = doc.createElementNS(SVG_NS, "path") as SVGPathElement;
     path.setAttribute("class", "slice slice-" + (isEven ? "even" : "odd"));
     path.setAttribute("d", wedgePathD(a0, a1));
-    path.setAttribute("fill", isEven ? "var(--slice-bg-even)" : "var(--slice-bg-odd)");
-    // Only bordered slices get a stroke, and it is darker than the slice fill.
+    // A category slice carries its own color; other slices keep the alternating
+    // even/odd scheme fill.
+    const sliceColor = cfg.slices[i]!.color;
+    path.setAttribute("fill", sliceColor ?? (isEven ? "var(--slice-bg-even)" : "var(--slice-bg-odd)"));
+    // Only bordered slices get a stroke; kept as the scheme border color (not derived
+    // from sliceColor) so borders stay a single consistent color across the wheel.
     if (bordered) {
       path.style.stroke = "var(--slice-border, #c76b7d)";
       path.style.strokeWidth = "1.5";
