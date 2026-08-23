@@ -48,7 +48,12 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
 
   if (errors.length > 0) return { kind: "error", errors };
 
-  const style: WheelStyle = fieldData.wheelStyle === "fullwheel" ? "fullwheel" : "halfwheel";
+  const style: WheelStyle =
+    fieldData.wheelStyle === "fullwheel"
+      ? "fullwheel"
+      : fieldData.wheelStyle === "halfwheel"
+        ? "halfwheel"
+        : (FIELD_DEFAULTS.wheelStyle as WheelStyle);
 
   // Defaults sourced from FIELD_DEFAULTS (src/config/fields.ts), the single source of
   // truth also used to generate the widget's fields.json schema.

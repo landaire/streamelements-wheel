@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildFieldsSchema, FIELD_DEFS } from "../src/config/fields.js";
+import { buildFieldsSchema, FIELD_DEFAULTS, FIELD_DEFS } from "../src/config/fields.js";
 import { parseConfig } from "../src/config/parse.js";
 import type { FieldData } from "../src/se/types.js";
 
@@ -20,5 +20,14 @@ describe("fields schema", () => {
 
   it("FIELD_DEFAULTS matches each def value", () => {
     for (const f of FIELD_DEFS) expect(schema[f.key]).toMatchObject({ value: f.value });
+  });
+
+  it("parseConfig falls back to FIELD_DEFAULTS for wheelStyle and colorScheme when omitted", () => {
+    const r = parseConfig({ sliceEntries: "A, B" });
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") {
+      expect(r.value.style).toBe(FIELD_DEFAULTS.wheelStyle);
+      expect(r.value.scheme).toEqual({ kind: "named", name: FIELD_DEFAULTS.colorScheme });
+    }
   });
 });

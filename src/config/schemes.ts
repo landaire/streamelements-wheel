@@ -1,10 +1,11 @@
 import type { FieldData } from "../se/types.js";
+import { FIELD_DEFAULTS } from "./fields.js";
 
 export type ColorScheme =
   | { kind: "named"; name: string }
   | { kind: "custom"; vars: Record<string, string> };
 
-const DEFAULT_SCHEME = "sweetheart-original"; // schema default matches the original widget
+const DEFAULT_SCHEME = FIELD_DEFAULTS.colorScheme as string;
 
 export function resolveScheme(fieldData: FieldData): ColorScheme {
   const raw = typeof fieldData.colorScheme === "string" ? fieldData.colorScheme : DEFAULT_SCHEME;
