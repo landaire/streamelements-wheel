@@ -33,7 +33,7 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "countdownText", type: "text", label: "Countdown text", value: "Spinning in... {countdown}", group: "Wheel Settings" },
   { key: "spinningText", type: "text", label: "Spinning text", value: "Spinning", group: "Wheel Settings" },
   { key: "magnetism", type: "checkbox", label: "Magnetism (snap to slice center)", value: false, group: "Spin Behavior" },
-  { key: "seamBand", type: "number", label: "Seam band (deg, half-width)", value: 3, group: "Spin Behavior" },
+  { key: "seamBand", type: "number", label: "Seam tolerance (deg)", value: 1, group: "Spin Behavior", hint: "Magnetism-off only: a landing within this many degrees of a boundary counts as 'on the line' (spin again). Smaller is rarer; roughly (slices x 2 x this)/360 of spins land on a line." },
   { key: "respinText", type: "text", label: "Seam re-spin text", value: "On the line -- spin again", group: "Spin Behavior" },
   { key: "spinCommand", type: "text", label: "Chat command to spin (broadcaster/mods)", value: "!spin", group: "Spin Behavior" },
   { key: "colorScheme", type: "dropdown", label: "Color scheme", value: "sweetheart-original", options: { "sweetheart-original": "Sweetheart" }, group: "Colors" },

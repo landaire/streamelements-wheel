@@ -11,7 +11,7 @@ describe("parseConfig", () => {
     if (r.kind === "ok") {
       expect(r.value.slices.map((s) => s.text)).toEqual(["A", "B"]);
       expect(r.value.magnetism).toBe(false);
-      expect(r.value.seamBandDeg as number).toBe(3);
+      expect(r.value.seamBandDeg as number).toBe(1);
       expect(r.value.style).toBe("fullwheel");
       expect(r.value.winSound).toBeUndefined();
     }
