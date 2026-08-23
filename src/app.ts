@@ -12,6 +12,8 @@ import { consoleAnnounceSink } from "./se/sinks.js";
 import { onEventReceived, onWidgetLoad } from "./se/bootstrap.js";
 import type { Rng } from "./model/spin.js";
 
+export { FIELD_DEFS, buildFieldsSchema } from "./config/fields.js";
+
 // Default confetti palette; configurable in a later phase.
 const CONFETTI_COLORS: [string, string, string] = ["#ffc3ce", "#f8acbb", "#ffe3c3"];
 
@@ -81,6 +83,7 @@ export function mountWidget(
     cfg,
     {
       onStart: () => chrome.setTitle(cfg.spinningText),
+      onTick: () => audio.tick(),
       onResult: (result) => {
         if (result.kind === "winner") {
           const text = cfg.slices[result.slice as number]!.text;

@@ -122,14 +122,15 @@ function demoHtml() {
 <html lang="en"><head><meta charset="utf-8" /><title>Spinning Wheel - Demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#1b1b22}
-  #spin{position:fixed;top:12px;left:12px;z-index:10}
+  #spin{position:fixed;top:12px;left:12px;z-index:10;background:#ff8fa3;color:#1b1b22;border:none;border-radius:8px;padding:10px 18px;font-weight:700;font-family:sans-serif;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
+  #spin:hover{background:#ffa8b8}
   #back{position:fixed;top:12px;right:12px;z-index:10;color:#b8bdd6;font-family:monospace;font-size:12px}</style>
 </head><body>
 <button id="spin">Spin</button>
 <a id="back" href="./index.html">instructions</a>
 <script src="./wheel.js"></script>
 <script>
-  var fd = { sliceEntries: "Eat a lemon, Song request [5%], Ranked games, Draw subs [10], Push-ups, Mystery", wheelStyle: "halfwheel", wheelTitle: "50 points to spin", spinDuration: 5, magnetism: false, seamBand: 3, centerIcon: "heart", colorScheme: "sweetheart-original" };
+  var fd = { sliceEntries: "Eat a lemon, Song request [5%], Ranked games, Draw subs [10], Push-ups, Mystery", wheelStyle: "fullwheel", wheelTitle: "50 points to spin", spinDuration: 5, magnetism: false, seamBand: 3, centerIcon: "heart", colorScheme: "sweetheart-original", hubMode: "text", hubTextStyle: "fit", hubText: "SPIN\\nTHE\\nWHEEL" };
   var handle = window.Wheel.mountWidget(document, { fieldData: fd });
   document.getElementById("spin").addEventListener("click", function(){ handle.spin && handle.spin(); });
 </script>

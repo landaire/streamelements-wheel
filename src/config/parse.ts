@@ -6,6 +6,8 @@ import { resolveScheme, type ColorScheme } from "./schemes.js";
 import { FIELD_DEFAULTS } from "./fields.js";
 
 export type WheelStyle = "halfwheel" | "fullwheel";
+export type HubMode = "icon" | "image" | "text";
+export type HubTextStyle = "fit" | "curve";
 
 export interface WheelConfig {
   scale: number;
@@ -22,6 +24,10 @@ export interface WheelConfig {
   spinCommand: string;
   scheme: ColorScheme;
   centerIcon: string;
+  hubMode: HubMode;
+  hubImage: string;
+  hubText: string;
+  hubTextStyle: HubTextStyle;
   winSound: string | undefined;
   tickSound: string | undefined;
   disableConfetti: boolean;
@@ -61,6 +67,22 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
         ? "halfwheel"
         : (FIELD_DEFAULTS.wheelStyle as WheelStyle);
 
+  const hubMode: HubMode =
+    fieldData.hubMode === "image"
+      ? "image"
+      : fieldData.hubMode === "text"
+        ? "text"
+        : fieldData.hubMode === "icon"
+          ? "icon"
+          : (FIELD_DEFAULTS.hubMode as HubMode);
+
+  const hubTextStyle: HubTextStyle =
+    fieldData.hubTextStyle === "curve"
+      ? "curve"
+      : fieldData.hubTextStyle === "fit"
+        ? "fit"
+        : (FIELD_DEFAULTS.hubTextStyle as HubTextStyle);
+
   // Defaults sourced from FIELD_DEFAULTS (src/config/fields.ts), the single source of
   // truth also used to generate the widget's fields.json schema.
   return {
@@ -80,6 +102,10 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       spinCommand: str(fieldData.spinCommand, FIELD_DEFAULTS.spinCommand as string),
       scheme: resolveScheme(fieldData),
       centerIcon: str(fieldData.centerIcon, FIELD_DEFAULTS.centerIcon as string),
+      hubMode,
+      hubImage: str(fieldData.hubImage, FIELD_DEFAULTS.hubImage as string),
+      hubText: str(fieldData.hubText, FIELD_DEFAULTS.hubText as string),
+      hubTextStyle,
       winSound: opt(fieldData.soundWin),
       tickSound: opt(fieldData.soundTick),
       disableConfetti: bool(fieldData.disableConfetti, FIELD_DEFAULTS.disableConfetti as boolean),

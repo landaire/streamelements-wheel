@@ -16,7 +16,7 @@ export interface FieldDef {
 
 export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "scaleWidget", type: "slider", label: "Widget scale", value: 1, min: 0.5, max: 3, step: 0.1, group: "Wheel Settings" },
-  { key: "wheelStyle", type: "dropdown", label: "Wheel style", value: "halfwheel", options: { halfwheel: "Half Wheel", fullwheel: "Full Wheel" }, group: "Wheel Settings" },
+  { key: "wheelStyle", type: "dropdown", label: "Wheel style", value: "fullwheel", options: { halfwheel: "Half Wheel", fullwheel: "Full Wheel" }, group: "Wheel Settings" },
   { key: "wheelTitle", type: "text", label: "Title", value: "50 points to spin", group: "Wheel Settings" },
   { key: "sliceEntries", type: "text", label: "Slices (comma list, [n] or [n%] = weight)", value: "Eat a lemon, Song request [5%], Ranked games, Draw subs [10]", group: "Wheel Slices" },
   { key: "spinDuration", type: "number", label: "Spin duration (s)", value: 5, group: "Wheel Settings" },
@@ -29,6 +29,10 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "spinCommand", type: "text", label: "Chat command to spin (broadcaster/mods)", value: "!spin", group: "Spin Behavior" },
   { key: "colorScheme", type: "dropdown", label: "Color scheme", value: "sweetheart-original", options: { "sweetheart-original": "Sweetheart" }, group: "Colors" },
   { key: "centerIcon", type: "dropdown", label: "Center icon", value: "heart", options: { heart: "Heart", star: "Star", skull: "Skull", diamond: "Diamond" }, group: "Colors" },
+  { key: "hubMode", type: "dropdown", label: "Hub content", value: "icon", options: { icon: "Icon", image: "Image", text: "Text" }, group: "Center Hub" },
+  { key: "hubImage", type: "text", label: "Hub image URL", value: "", group: "Center Hub" },
+  { key: "hubText", type: "text", label: "Hub text", value: "", group: "Center Hub" },
+  { key: "hubTextStyle", type: "dropdown", label: "Hub text style", value: "fit", options: { fit: "Fit (block)", curve: "Curved" }, group: "Center Hub" },
   { key: "disableConfetti", type: "checkbox", label: "Disable confetti", value: false, group: "Confetti" },
   { key: "soundWin", type: "sound-input", label: "Win sound", value: "", group: "Sounds" },
   { key: "soundTick", type: "sound-input", label: "Tick sound", value: "", group: "Sounds" },

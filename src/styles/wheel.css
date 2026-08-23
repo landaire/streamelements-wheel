@@ -3,20 +3,59 @@
   width: calc(500px * var(--scale, 1));
   height: calc(500px * var(--scale, 1));
 }
+/* Non-rotating wrapper: any clip (e.g. halfwheel) goes here, never on .wheel itself,
+   or the clip would spin with the disc. */
+.wheel-clip {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  filter: drop-shadow(0 10px 22px rgba(0, 0, 0, 0.45));
+}
 .wheel {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   transform: rotate(var(--spin-degree, 0deg));
 }
-.slice {
+.wheel-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.slice-even {
+  stroke: var(--slice-border, #c76b7d);
+  stroke-width: 2;
+  stroke-linejoin: round;
+}
+/* Fixed top-left light source: these overlays are siblings of .wheel, not children,
+   so they never rotate with the disc. */
+.wheel-sheen {
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  transform: rotate(calc(var(--slice-start) - 90deg));
-  -webkit-mask: conic-gradient(from 0deg, #000 0 var(--slice-size), transparent var(--slice-size) 360deg);
-  mask: conic-gradient(from 0deg, #000 0 var(--slice-size), transparent var(--slice-size) 360deg);
-  background: var(--slice-bg, #ccc);
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.32), rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.14) 100%);
+  mix-blend-mode: soft-light;
+}
+.wheel-highlight {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(circle at 27% 22%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 42%);
+}
+.wheel-rim {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.55) inset,
+    0 0 0 7px rgba(140, 80, 55, 0.35) inset,
+    0 0 0 10px rgba(255, 255, 255, 0.22) inset,
+    0 3px 8px rgba(0, 0, 0, 0.35);
 }
 .entry {
   position: absolute;
@@ -33,6 +72,7 @@
   text-align: center;
   color: var(--entry-color, #fff);
   font-size: var(--entry-font-size, 15px);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   transform: rotate(90deg);
 }
 :root {
@@ -43,22 +83,46 @@
 .centerpiece {
   position: absolute; left: 50%; top: 50%; width: 22%; height: 22%;
   transform: translate(-50%, -50%); border-radius: 50%;
-  background: var(--centerpiece-bg, #b64e5f);
+  background:
+    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 65% 82%, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0) 55%),
+    var(--centerpiece-bg, #b64e5f);
+  box-shadow:
+    inset 0 2px 3px rgba(255, 255, 255, 0.55),
+    inset 0 -3px 5px rgba(0, 0, 0, 0.35),
+    0 3px 8px rgba(0, 0, 0, 0.45);
   display: flex; align-items: center; justify-content: center;
+  overflow: hidden;
+  color: #fff;
 }
+.hub-icon-svg { width: 46%; height: 46%; }
+.hub-image { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+.hub-text {
+  width: 84%;
+  text-align: center;
+  white-space: pre-wrap;
+  line-height: 1.05;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+.hub-text-curve { width: 100%; height: 100%; }
+.hub-text-curve-text { fill: #fff; font-weight: 700; }
 .headpiece {
   position: absolute; left: 50%; top: -6%; width: 6%; height: 12%;
   transform: translateX(-50%);
-  background: var(--headpiece-bg, #fff);
+  background: linear-gradient(180deg, #fff, #d7d7dc 55%, #9a9aa4);
+  filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.5));
   clip-path: polygon(50% 100%, 0 0, 100% 0);
 }
 .title-wrap {
-  position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%);
+  position: absolute; left: 50%; top: -17%; transform: translateX(-50%);
   padding: 6px 14px; border-radius: 999px;
   background: var(--plate-bg, #ffe1e7); color: var(--title-color, #b64e5f);
   font-weight: 600; white-space: nowrap;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
-.set-style-halfwheel .wheel { clip-path: inset(0 0 40% 0); }
+.set-style-halfwheel .wheel-clip { clip-path: inset(0 0 40% 0); }
 .confetti {
   position: absolute;
   inset: 0;
