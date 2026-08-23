@@ -31,4 +31,13 @@ describe("geometry", () => {
     expect(s.dist as number).toBeCloseTo(2);
     expect(s.between.map((x) => x as number)).toEqual([0, 1]);
   });
+  it("finds nearest seam at the 0/360 wraparound boundary", () => {
+    const l = layout(mk([1, 1, 1, 1])); // seams at 0,90,180,270
+    const s = nearestSeam(l, deg(2));
+    expect(s.dist as number).toBeCloseTo(2);
+    expect(s.between.map((x) => x as number)).toEqual([3, 0]);
+    const s2 = nearestSeam(l, deg(358));
+    expect(s2.dist as number).toBeCloseTo(2);
+    expect(s2.between.map((x) => x as number)).toEqual([3, 0]);
+  });
 });

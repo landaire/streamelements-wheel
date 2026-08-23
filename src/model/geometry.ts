@@ -25,15 +25,15 @@ export function sliceCenterDeg(l: SliceLayout): Degrees {
   return normalizeDeg(deg(((l.startTurn as number) + (l.sizeTurn as number) / 2) * 360));
 }
 
-export function sliceAtAngle(layout: readonly SliceLayout[], d: Degrees): SliceIndex {
+export function sliceAtAngle(layouts: readonly SliceLayout[], d: Degrees): SliceIndex {
   const a = normalizeDeg(d) as number;
-  for (const l of layout) {
+  for (const l of layouts) {
     const start = (l.startTurn as number) * 360;
     const end = start + (l.sizeTurn as number) * 360;
     if (a >= start && a < end) return l.index;
   }
   // Floating point can put a at exactly 360; the final slice owns the wrap point.
-  return layout[layout.length - 1]!.index;
+  return layouts[layouts.length - 1]!.index;
 }
 
 export interface SeamInfo {
@@ -41,13 +41,13 @@ export interface SeamInfo {
   between: [SliceIndex, SliceIndex];
 }
 
-export function nearestSeam(layout: readonly SliceLayout[], d: Degrees): SeamInfo {
+export function nearestSeam(layouts: readonly SliceLayout[], d: Degrees): SeamInfo {
   const a = normalizeDeg(d) as number;
-  const n = layout.length;
+  const n = layouts.length;
   let best = Infinity;
   let bi = 0;
   for (let i = 0; i < n; i++) {
-    const seam = (layout[i]!.startTurn as number) * 360; // boundary before slice i
+    const seam = (layouts[i]!.startTurn as number) * 360; // boundary before slice i
     let dd = Math.abs(a - seam);
     dd = Math.min(dd, 360 - dd);
     if (dd < best) {
@@ -55,7 +55,7 @@ export function nearestSeam(layout: readonly SliceLayout[], d: Degrees): SeamInf
       bi = i;
     }
   }
-  const prev = layout[(bi - 1 + n) % n]!.index; // slice ending at this seam
-  const next = layout[bi]!.index; // slice starting at this seam
+  const prev = layouts[(bi - 1 + n) % n]!.index; // slice ending at this seam
+  const next = layouts[bi]!.index; // slice starting at this seam
   return { dist: deg(best), between: [prev, next] };
 }
