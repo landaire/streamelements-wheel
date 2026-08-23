@@ -29,10 +29,16 @@ describe("WheelController.addEntry", () => {
     expect(c.entries()).toEqual(["A", "B", "Pizza"]);
   });
 
-  it("rejects once addEntryMax is reached", () => {
+  it("rejects once addEntryMax is reached (reward limits enforced)", () => {
     const c = makeController({ addEntryMax: 1 });
-    expect(c.addEntry("Pizza", "viewer1").kind).toBe("added");
-    expect(c.addEntry("Tacos", "viewer2")).toEqual({ kind: "rejected", reason: "max-reached" });
+    expect(c.addEntry("Pizza", "viewer1", { enforceRewardLimits: true }).kind).toBe("added");
+    expect(c.addEntry("Tacos", "viewer2", { enforceRewardLimits: true })).toEqual({ kind: "rejected", reason: "max-reached" });
+  });
+
+  it("trusted (command) adds ignore the reward max", () => {
+    const c = makeController({ addEntryMax: 1 });
+    expect(c.addEntry("Pizza").kind).toBe("added");
+    expect(c.addEntry("Tacos").kind).toBe("added"); // no enforceRewardLimits -> max not applied
   });
 
   it("addEntryMax 0 means unlimited", () => {
@@ -41,10 +47,10 @@ describe("WheelController.addEntry", () => {
     expect(c.entries().length).toBe(2 + 5);
   });
 
-  it("rejects a second entry from the same user when addEntryOnePerUser is on", () => {
+  it("rejects a second entry from the same user when addEntryOnePerUser is on (reward limits enforced)", () => {
     const c = makeController({ addEntryOnePerUser: true });
-    expect(c.addEntry("Pizza", "viewer1").kind).toBe("added");
-    expect(c.addEntry("Tacos", "viewer1")).toEqual({ kind: "rejected", reason: "duplicate-user" });
+    expect(c.addEntry("Pizza", "viewer1", { enforceRewardLimits: true }).kind).toBe("added");
+    expect(c.addEntry("Tacos", "viewer1", { enforceRewardLimits: true })).toEqual({ kind: "rejected", reason: "duplicate-user" });
   });
 
   it("allows a second entry from the same user when addEntryOnePerUser is off", () => {

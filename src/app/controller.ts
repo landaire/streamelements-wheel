@@ -36,7 +36,7 @@ export interface WheelController {
   pause(): void;
   resume(): void;
   isPaused(): boolean;
-  addEntry(text: string, user?: string): AddEntryResult;
+  addEntry(text: string, user?: string, opts?: { enforceRewardLimits?: boolean }): AddEntryResult;
   removeEntry(text: string): RemoveEntryResult;
   resetEntries(): void;
   entries(): string[];
@@ -143,17 +143,20 @@ export function createController(
   render(); // first paint with base slices only; load() may add extras once it resolves
   const ready = load();
 
-  function addEntry(text: string, user?: string): AddEntryResult {
+  // enforceRewardLimits: max + one-per-user apply to viewer channel-point redemptions,
+  // NOT to trusted mod chat commands (a mod can !wheel add many entries). Text-dedupe
+  // always applies so a slice is never listed twice.
+  function addEntry(text: string, user?: string, opts: { enforceRewardLimits?: boolean } = {}): AddEntryResult {
     const trimmed = text.trim();
     if (trimmed.length === 0) return { kind: "rejected", reason: "empty-text" };
-    if (baseCfg.addEntryMax > 0 && extras.length >= baseCfg.addEntryMax) {
+    if (opts.enforceRewardLimits && baseCfg.addEntryMax > 0 && extras.length >= baseCfg.addEntryMax) {
       return { kind: "rejected", reason: "max-reached" };
     }
     const normText = trimmed.toLowerCase();
     if (extras.some((e) => e.text.toLowerCase() === normText)) {
       return { kind: "rejected", reason: "duplicate-text" };
     }
-    if (baseCfg.addEntryOnePerUser && user) {
+    if (opts.enforceRewardLimits && baseCfg.addEntryOnePerUser && user) {
       const normUser = user.toLowerCase();
       if (extras.some((e) => (e.user ?? "").toLowerCase() === normUser)) {
         return { kind: "rejected", reason: "duplicate-user" };
@@ -206,13 +209,12 @@ export function createController(
     if (!parsed) return;
     if (!hasCommandPermission(baseCfg.commandPermission, data, broadcasterUsername)) return;
 
-    const user = data.nick ?? data.displayName;
     switch (parsed.cmd) {
       case "spin":
         spin();
         return;
       case "add":
-        addEntry(parsed.arg, user);
+        addEntry(parsed.arg); // trusted mod command: no reward limits, no per-user cap
         return;
       case "remove":
         removeEntry(parsed.arg);
@@ -241,7 +243,7 @@ export function createController(
     if (parsed.rewardTitle.trim().toLowerCase() !== baseCfg.addEntryRewardName.trim().toLowerCase()) return;
     const entryText = baseCfg.addEntrySource === "username" ? parsed.username : (parsed.userInput ?? parsed.username);
     if (!entryText) return;
-    addEntry(entryText, parsed.username);
+    addEntry(entryText, parsed.username, { enforceRewardLimits: true });
   }
 
   return {
