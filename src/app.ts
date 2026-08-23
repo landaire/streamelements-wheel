@@ -99,6 +99,10 @@ export function mountWidget(
   );
 
   doc.body.appendChild(dom.container);
+  // Fit the hub text now that the widget has real layout (addChrome's fit ran before
+  // attach and no-oped); rAF covers a late first paint.
+  chrome.refitHub();
+  if (typeof requestAnimationFrame !== "undefined") requestAnimationFrame(() => chrome.refitHub());
   return { root: dom.container, spin: () => animator.spin(), spinCommand: cfg.spinCommand };
 }
 

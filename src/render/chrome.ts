@@ -38,32 +38,36 @@ function buildIconGlyph(doc: Document, icon: string): SVGElement | undefined {
 }
 
 function buildFitText(doc: Document, text: string): HTMLElement {
+  // Outer wrap fills the hub and flex-centers; inner element carries the text and
+  // gets its font-size scaled to fit. Centering lives on the wrap, so it holds
+  // regardless of whether the fit pass has run yet.
   const wrap = el(doc, "hub-text hub-text-fit");
-  wrap.textContent = text; // CSS white-space: pre-wrap renders \n and wraps long lines
+  const inner = el(doc, "hub-text-inner");
+  inner.textContent = text; // CSS white-space: pre-wrap renders \n and wraps long lines
+  wrap.appendChild(inner);
   return wrap;
 }
 
-// Auto-scales the hub text's font-size to fit the inscribed box of the hub circle.
-// No-ops when the element has no real layout (e.g. jsdom without a stylesheet loaded).
+// Auto-scales the hub text's font-size to fill the wrap (the circle's padded inscribed
+// box). No-ops when the wrap has no real layout (e.g. before the widget is attached, or
+// jsdom without a stylesheet); app.ts re-runs it after the widget is in the document.
 export function fitHubText(wrap: HTMLElement): void {
-  const parent = wrap.parentElement;
-  if (!parent) return;
-  const maxW = parent.clientWidth;
-  const maxH = parent.clientHeight;
-  if (!maxW || !maxH) return;
-  const inset = 0.72; // safe margin inside the circle's inscribed square
-  const targetW = maxW * inset;
-  const targetH = maxH * inset;
+  const inner = wrap.querySelector<HTMLElement>(".hub-text-inner");
+  if (!inner) return;
+  if (!wrap.clientWidth || !wrap.clientHeight) return;
+  const inset = 0.68; // keep the text within the circle's inscribed square
+  const targetW = wrap.clientWidth * inset;
+  const targetH = wrap.clientHeight * inset;
   let lo = 6;
-  let hi = 96;
-  for (let i = 0; i < 12; i++) {
+  let hi = 120;
+  for (let i = 0; i < 14; i++) {
     const mid = (lo + hi) / 2;
-    wrap.style.fontSize = mid + "px";
-    const fits = wrap.scrollWidth <= targetW && wrap.scrollHeight <= targetH;
+    inner.style.fontSize = mid + "px";
+    const fits = inner.scrollWidth <= targetW && inner.scrollHeight <= targetH;
     if (fits) lo = mid;
     else hi = mid;
   }
-  wrap.style.fontSize = lo + "px";
+  inner.style.fontSize = lo + "px";
 }
 
 // Curved hub text flows along a circular textPath. jsdom has no font metrics, so the
