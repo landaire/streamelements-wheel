@@ -23,7 +23,6 @@ export interface Animator {
 
 const SETTLE_GRACE_MS = 50; // fallback past animationend for headless environments
 const WINDUP_DEG = 16; // backward wind-up before the forward pull, mimics a human tug
-const OVERSHOOT_DEG = 9; // forward overshoot past the target before settling back
 
 // Reads the wheel's current rotation (degrees, in [-180, 180]) from its computed transform
 // matrix. Returns undefined when no transform is applied (e.g. jsdom without the wheel
@@ -90,11 +89,9 @@ export function createAnimator(
     const from = rotation;
     const to = nextRotation(rotation, result.restAngle, spins);
     const windup = from - WINDUP_DEG;
-    const overshoot = to + OVERSHOOT_DEG;
 
     dom.wheel.style.setProperty("--spin-from", from + "deg");
     dom.wheel.style.setProperty("--spin-windup", windup + "deg");
-    dom.wheel.style.setProperty("--spin-overshoot", overshoot + "deg");
     dom.wheel.style.setProperty("--spin-to", to + "deg");
     dom.wheel.style.setProperty("--spin-duration", cfg.spinDurationSec + "s");
     // The resting transform (rotate(var(--spin-degree))) must already equal the final

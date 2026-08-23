@@ -61,6 +61,9 @@ export function mountWidget(
   const dom = buildWheel(doc, cfg);
   const chrome = addChrome(doc, dom, cfg);
   dom.container.insertBefore(canvas, dom.container.firstChild);
+  // Apply the resolved color scheme's CSS variables onto the container (named palette
+  // or custom fields); overrides the :root fallback.
+  for (const [k, v] of Object.entries(cfg.scheme.vars)) dom.container.style.setProperty(k, v);
 
   // No AudioContext in headless/jsdom environments; fall back to a no-op engine
   // rather than constructing an AudioContext that doesn't exist there.

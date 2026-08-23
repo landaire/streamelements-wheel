@@ -17,16 +17,16 @@
   border-radius: 50%;
   transform: rotate(var(--spin-degree, 0deg));
 }
-/* Human-pull spin: a small backward wind-up, a strong forward pull that decelerates,
-   a slight overshoot past the target, then settle back. --spin-degree already holds
-   the final value while this plays, so removing is-spinning never causes a jump. */
+/* Human-pull spin: a small backward wind-up, then a strong forward pull that decelerates
+   with friction to a dead stop at the target -- no overshoot, no settling backward.
+   --spin-degree already holds the final value while this plays, so removing is-spinning
+   never causes a jump. */
 .wheel.is-spinning {
   animation: wheel-spin var(--spin-duration, 5s) forwards;
 }
 @keyframes wheel-spin {
-  0%   { transform: rotate(var(--spin-from, 0deg));      animation-timing-function: cubic-bezier(.35,0,.65,.35); }
-  7%   { transform: rotate(var(--spin-windup, 0deg));    animation-timing-function: cubic-bezier(.2,.55,.25,1); }
-  88%  { transform: rotate(var(--spin-overshoot, 0deg)); animation-timing-function: cubic-bezier(.33,0,.4,1); }
+  0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
+  7%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.16, .62, .28, 1); }
   100% { transform: rotate(var(--spin-to, 0deg)); }
 }
 .wheel-svg {
@@ -88,8 +88,8 @@
   transform: rotate(90deg);
 }
 :root {
-  --slice-bg-even: #f8acba;
-  --slice-bg-odd: #ffc2ce;
+  --slice-bg-even: #c42d9a;
+  --slice-bg-odd: #f4a6ea;
 }
 .details { position: absolute; inset: 0; pointer-events: none; }
 .centerpiece {

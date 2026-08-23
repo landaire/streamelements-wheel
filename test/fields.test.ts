@@ -27,7 +27,7 @@ describe("fields schema", () => {
     expect(r.kind).toBe("ok");
     if (r.kind === "ok") {
       expect(r.value.style).toBe(FIELD_DEFAULTS.wheelStyle);
-      expect(r.value.scheme).toEqual({ kind: "named", name: FIELD_DEFAULTS.colorScheme });
+      expect(r.value.scheme).toMatchObject({ kind: "named", name: FIELD_DEFAULTS.colorScheme });
     }
   });
 });
