@@ -60,4 +60,32 @@ describe("spin resolution", () => {
     expect(a).toBeGreaterThanOrEqual(0);
     expect(a).toBeLessThan(360);
   });
+
+  it("small slice is never winnable when 2*seamBandDeg >= slice arc", () => {
+    // weights [1, 20]: slice 0 arc = 360*1/21 ~= 17.14 deg; slice 1 arc ~= 342.86 deg
+    // with seamBandDeg deg(12), 2*band = 24 > 17.14, so slice 0 is fully consumed by seams
+    const wl = layout(mk([1, 20]));
+    const seamBand = deg(12);
+    let hasWinner0 = false;
+    const N = 1000;
+    for (let i = 0; i < N; i++) {
+      const a = deg(((i + 0.5) / N) * 360);
+      const r = resolveLanding(wl, a, { magnetism: false, seamBandDeg: seamBand });
+      if (r.kind === "winner" && (r.slice as number) === 0) hasWinner0 = true;
+    }
+    expect(hasWinner0).toBe(false);
+  });
+
+  it("small slice can win when seamBandDeg is 0", () => {
+    // Same weights [1, 20] but with no seam band, slice 0 should win in its arc range
+    const wl = layout(mk([1, 20]));
+    let hasWinner0 = false;
+    const N = 1000;
+    for (let i = 0; i < N; i++) {
+      const a = deg(((i + 0.5) / N) * 360);
+      const r = resolveLanding(wl, a, { magnetism: false, seamBandDeg: deg(0) });
+      if (r.kind === "winner" && (r.slice as number) === 0) hasWinner0 = true;
+    }
+    expect(hasWinner0).toBe(true);
+  });
 });

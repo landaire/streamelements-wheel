@@ -31,9 +31,14 @@ export function resolveLanding(
 ): SpinResult {
   const slice = sliceAtAngle(layout, restAngle);
   if (cfg.magnetism) {
-    const l = layout.find((x) => x.index === slice)!;
+    const l = layout.find((x) => x.index === slice)!; // slice always comes from sliceAtAngle on this layout, so find succeeds
+
     return { kind: "winner", slice, restAngle: sliceCenterDeg(l) };
   }
+  // With magnetism off, each slice loses 2*seamBandDeg of winning arc at its two edges,
+  // so small slices are proportionally deweighted among winners. A slice whose arc <=
+  // 2*seamBandDeg is never winnable with magnetism off (always resolves to seam).
+  // Phase 2 config validation will warn when 2*seamBandDeg >= the smallest slice arc.
   const seam = nearestSeam(layout, restAngle);
   if ((seam.dist as number) <= (cfg.seamBandDeg as number)) {
     return { kind: "seam", between: seam.between, restAngle: normalizeDeg(restAngle) };
