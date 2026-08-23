@@ -12,6 +12,7 @@ export interface FieldDef {
   min?: number;
   max?: number;
   step?: number;
+  hint?: string; // optional subtext shown under the control in the demo playground
 }
 
 export const FIELD_DEFS: readonly FieldDef[] = [
@@ -19,6 +20,14 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "wheelStyle", type: "dropdown", label: "Wheel style", value: "fullwheel", options: { halfwheel: "Half Wheel", fullwheel: "Full Wheel" }, group: "Wheel Settings" },
   { key: "wheelTitle", type: "text", label: "Title", value: "50 points to spin", group: "Wheel Settings" },
   { key: "sliceEntries", type: "text", label: "Slices (comma list, [n] or [n%] = weight)", value: "Eat a lemon, Song request [5%], Ranked games, Draw subs [10]", group: "Wheel Slices" },
+  {
+    key: "normalizeWeights",
+    type: "checkbox",
+    label: "Compatibility weight mode",
+    value: false,
+    group: "Wheel Slices",
+    hint: "Original-spinner compatibility: treat [n] and [n%] as relative weights normalized to the total, instead of absolute percentages.",
+  },
   { key: "spinDuration", type: "number", label: "Spin duration (s)", value: 5, group: "Wheel Settings" },
   { key: "countdownTime", type: "number", label: "Countdown (s, 0 = instant)", value: 3, group: "Wheel Settings" },
   { key: "countdownText", type: "text", label: "Countdown text", value: "Spinning in... {countdown}", group: "Wheel Settings" },
@@ -36,6 +45,8 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "disableConfetti", type: "checkbox", label: "Disable confetti", value: false, group: "Confetti" },
   { key: "soundWin", type: "sound-input", label: "Win sound", value: "", group: "Sounds" },
   { key: "soundTick", type: "sound-input", label: "Tick sound", value: "", group: "Sounds" },
+  { key: "disableSound", type: "checkbox", label: "Mute all sounds", value: false, group: "Sounds" },
+  { key: "disableTickSound", type: "checkbox", label: "Disable tick sound", value: false, group: "Sounds" },
 ];
 
 export const FIELD_DEFAULTS: Readonly<Record<string, FieldValue>> = Object.freeze(

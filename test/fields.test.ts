@@ -7,7 +7,7 @@ describe("fields schema", () => {
   const schema = buildFieldsSchema();
 
   it("covers every key parseConfig reads", () => {
-    const required = ["sliceEntries", "wheelStyle", "wheelTitle", "spinDuration", "countdownTime", "countdownText", "spinningText", "magnetism", "seamBand", "respinText", "spinCommand", "colorScheme", "centerIcon", "hubMode", "hubImage", "hubText", "hubTextStyle", "scaleWidget", "soundWin", "soundTick", "disableConfetti"];
+    const required = ["sliceEntries", "normalizeWeights", "wheelStyle", "wheelTitle", "spinDuration", "countdownTime", "countdownText", "spinningText", "magnetism", "seamBand", "respinText", "spinCommand", "colorScheme", "centerIcon", "hubMode", "hubImage", "hubText", "hubTextStyle", "scaleWidget", "soundWin", "soundTick", "disableConfetti", "disableSound", "disableTickSound"];
     for (const key of required) expect(schema[key], `missing field: ${key}`).toBeDefined();
   });
 

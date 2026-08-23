@@ -69,15 +69,20 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
     const a0 = (l.startTurn as number) * 360;
     const a1 = a0 + (l.sizeTurn as number) * 360;
     const isEven = i % 2 === 0;
+    // With an odd slice count, index 0 and the last index are both even AND adjacent
+    // at the wrap seam, so bordering both doubles the stroke there. Skip the last
+    // slice's border in that case to keep borders strictly alternating.
+    const isOddCount = laid.length % 2 === 1;
+    const bordered = isEven && !(isOddCount && i === laid.length - 1);
 
     const path = doc.createElementNS(SVG_NS, "path") as SVGPathElement;
     path.setAttribute("class", "slice slice-" + (isEven ? "even" : "odd"));
     path.setAttribute("d", wedgePathD(a0, a1));
     path.setAttribute("fill", isEven ? "var(--slice-bg-even)" : "var(--slice-bg-odd)");
-    // Only the darker (even) slices get a border, and it is darker than the slice fill.
-    if (isEven) {
+    // Only bordered slices get a stroke, and it is darker than the slice fill.
+    if (bordered) {
       path.style.stroke = "var(--slice-border, #c76b7d)";
-      path.style.strokeWidth = "2";
+      path.style.strokeWidth = "1.5";
       path.style.strokeLinejoin = "round";
     }
     svg.appendChild(path);

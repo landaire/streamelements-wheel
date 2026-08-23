@@ -83,4 +83,33 @@ describe("parseConfig", () => {
       expect(r.value.hubTextStyle).toBe("fit");
     }
   });
+  it("defaults disableSound and disableTickSound to false", () => {
+    const r = parseConfig({ ...base });
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") {
+      expect(r.value.disableSound).toBe(false);
+      expect(r.value.disableTickSound).toBe(false);
+    }
+  });
+  it("maps explicit disableSound and disableTickSound", () => {
+    const r = parseConfig({ ...base, disableSound: true, disableTickSound: true });
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") {
+      expect(r.value.disableSound).toBe(true);
+      expect(r.value.disableTickSound).toBe(true);
+    }
+  });
+  it("defaults normalizeWeights to false (absolute weight mode)", () => {
+    const r = parseConfig({ sliceEntries: "A, B [50%]" });
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") {
+      expect(r.value.normalizeWeights).toBe(false);
+      expect(r.value.slices.map((s) => s.weight as number)).toEqual([50, 50]);
+    }
+  });
+  it("normalizeWeights=true reproduces the old relative-normalized behavior", () => {
+    const r = parseConfig({ sliceEntries: "A [5], B [10%], C", normalizeWeights: true });
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") expect(r.value.slices.map((s) => s.weight as number)).toEqual([5, 10, 1]);
+  });
 });

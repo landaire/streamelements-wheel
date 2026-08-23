@@ -109,6 +109,86 @@ function buildCurvedText(doc: Document, text: string): SVGElement {
   return svg;
 }
 
+// A faceted emerald gem for the fixed pointer: a gold bezel setting at the mount, a
+// crown of light-to-mid green facets, a bright specular highlight facet, and a darker
+// pavilion tapering to the tip that touches the rim. Gradient ids are per-call so
+// multiple mounted widgets never share (and fight over) the same SVG def id.
+function buildEmeraldPointer(doc: Document): SVGElement {
+  const uid = Math.random().toString(36).slice(2);
+  const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
+  svg.setAttribute("viewBox", "0 0 100 140");
+  svg.setAttribute("class", "headpiece-gem");
+
+  const defs = doc.createElementNS(SVG_NS, "defs");
+  const gradients: [string, [string, string][]][] = [
+    ["bezel-" + uid, [["0%", "#f7e08a"], ["45%", "#c9962f"], ["100%", "#7a5716"]]],
+    ["table-" + uid, [["0%", "#eafff0"], ["100%", "#57c98a"]]],
+    ["crown-l-" + uid, [["0%", "#bdf7cf"], ["100%", "#1f8a54"]]],
+    ["crown-r-" + uid, [["0%", "#8fe8ae"], ["100%", "#146339"]]],
+    ["pav-l-" + uid, [["0%", "#2f9c62"], ["100%", "#0f5132"]]],
+    ["pav-r-" + uid, [["0%", "#1c7042"], ["100%", "#08301d"]]],
+  ];
+  for (const [id, stops] of gradients) {
+    const grad = doc.createElementNS(SVG_NS, "linearGradient");
+    grad.setAttribute("id", id);
+    grad.setAttribute("x1", "0%");
+    grad.setAttribute("y1", "0%");
+    grad.setAttribute("x2", "0%");
+    grad.setAttribute("y2", "100%");
+    for (const [offset, color] of stops) {
+      const stop = doc.createElementNS(SVG_NS, "stop");
+      stop.setAttribute("offset", offset);
+      stop.setAttribute("stop-color", color);
+      grad.appendChild(stop);
+    }
+    defs.appendChild(grad);
+  }
+  svg.appendChild(defs);
+
+  const poly = (points: string, fill: string, extra?: Record<string, string>): void => {
+    const p = doc.createElementNS(SVG_NS, "polygon");
+    p.setAttribute("points", points);
+    p.setAttribute("fill", fill);
+    if (extra) for (const [k, v] of Object.entries(extra)) p.setAttribute(k, v);
+    svg.appendChild(p);
+  };
+
+  // Gold bezel where the gem mounts to the rim edge.
+  poly("30,0 70,0 76,20 24,20", `url(#bezel-${uid})`);
+  // Pavilion (lower, shaded facets) drawn first so the crown's girdle overlaps it cleanly.
+  poly("6,56 50,74 50,138", `url(#pav-l-${uid})`);
+  poly("94,56 50,74 50,138", `url(#pav-r-${uid})`);
+  // Crown (upper, brighter facets).
+  poly("24,20 50,20 50,74 6,56", `url(#crown-l-${uid})`);
+  poly("76,20 50,20 50,74 94,56", `url(#crown-r-${uid})`);
+  // Table facet: the brightest top-facing cut.
+  poly("34,20 66,20 58,32 42,32", `url(#table-${uid})`);
+  // Specular highlight: a small bright glint on the upper-left crown facet.
+  poly("22,26 38,26 28,44", "rgba(255,255,255,0.75)");
+
+  // Crisp facet edges.
+  const edges = [
+    "50,20 50,138",
+    "24,20 6,56",
+    "76,20 94,56",
+    "6,56 50,74 94,56",
+    "34,20 42,32",
+    "66,20 58,32",
+  ];
+  for (const d of edges) {
+    const line = doc.createElementNS(SVG_NS, "polyline");
+    line.setAttribute("points", d);
+    line.setAttribute("fill", "none");
+    line.setAttribute("stroke", "#0a3d24");
+    line.setAttribute("stroke-width", "0.8");
+    line.setAttribute("stroke-opacity", "0.55");
+    line.setAttribute("stroke-linejoin", "round");
+    svg.appendChild(line);
+  }
+
+  return svg;
+}
+
 function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): void {
   if (cfg.hubMode === "image") {
     // Inset the image into the centerpiece rather than covering it: the surrounding
@@ -142,6 +222,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   const centerpiece = el(doc, "centerpiece");
   buildHub(doc, centerpiece, cfg);
   const headpiece = el(doc, "headpiece"); // fixed pointer at 12 o'clock; does not rotate
+  headpiece.appendChild(buildEmeraldPointer(doc));
   details.appendChild(centerpiece);
   details.appendChild(headpiece);
   dom.container.appendChild(details);

@@ -13,6 +13,7 @@ import { onEventReceived, onWidgetLoad } from "./se/bootstrap.js";
 import type { Rng } from "./model/spin.js";
 
 export { FIELD_DEFS, buildFieldsSchema } from "./config/fields.js";
+export { parseConfig } from "./config/parse.js";
 
 // Default confetti palette; configurable in a later phase.
 const CONFETTI_COLORS: [string, string, string] = ["#ffc3ce", "#f8acbb", "#ffe3c3"];
@@ -78,17 +79,18 @@ export function mountWidget(
   );
   const announce = consoleAnnounceSink(chrome.setTitle, cfg.respinText);
 
+  const tickEnabled = !cfg.disableSound && !cfg.disableTickSound;
   const animator = createAnimator(
     dom,
     cfg,
     {
       onStart: () => chrome.setTitle(cfg.spinningText),
-      onTick: () => audio.tick(),
+      ...(tickEnabled ? { onTick: () => audio.tick() } : {}),
       onResult: (result) => {
         if (result.kind === "winner") {
           const text = cfg.slices[result.slice as number]!.text;
           announce.winner(text);
-          audio.win();
+          if (!cfg.disableSound) audio.win();
           if (!cfg.disableConfetti) confetti.fire();
         } else {
           announce.seam();

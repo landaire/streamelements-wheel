@@ -21,7 +21,9 @@ export interface Animator {
   isSpinning(): boolean;
 }
 
-const SETTLE_GRACE_MS = 50; // fallback past transitionend for headless environments
+const SETTLE_GRACE_MS = 50; // fallback past animationend for headless environments
+const WINDUP_DEG = 16; // backward wind-up before the forward pull, mimics a human tug
+const OVERSHOOT_DEG = 9; // forward overshoot past the target before settling back
 
 // Reads the wheel's current rotation (degrees, in [-180, 180]) from its computed transform
 // matrix. Returns undefined when no transform is applied (e.g. jsdom without the wheel
@@ -80,16 +82,31 @@ export function createAnimator(
     spinning = true;
     hooks.onStart?.();
 
+    // Resolve the landing BEFORE animating: with magnetism on, result.restAngle is the
+    // snapped slice center, and the animation must target that, not the raw rest angle.
     const restAngle = pickRestAngle(rng);
+    const result = resolveLanding(laid, restAngle, { magnetism: cfg.magnetism, seamBandDeg: cfg.seamBandDeg });
     const spins = pickSpins(rng);
-    rotation = nextRotation(rotation, restAngle, spins);
+    const from = rotation;
+    const to = nextRotation(rotation, result.restAngle, spins);
+    const windup = from - WINDUP_DEG;
+    const overshoot = to + OVERSHOOT_DEG;
 
-    dom.wheel.style.transition = `transform ${cfg.spinDurationSec}s cubic-bezier(0.1, 0.7, 0.1, 1)`;
-    // Force a layout flush so the transition has a committed "from" state before the rotation
-    // changes; otherwise a wheel that hasn't painted yet (transition + new value set in the
-    // same task) can skip straight to the end value instead of animating.
+    dom.wheel.style.setProperty("--spin-from", from + "deg");
+    dom.wheel.style.setProperty("--spin-windup", windup + "deg");
+    dom.wheel.style.setProperty("--spin-overshoot", overshoot + "deg");
+    dom.wheel.style.setProperty("--spin-to", to + "deg");
+    dom.wheel.style.setProperty("--spin-duration", cfg.spinDurationSec + "s");
+    // The resting transform (rotate(var(--spin-degree))) must already equal the final
+    // value: once is-spinning is removed at finish(), the keyframe animation's 100%
+    // frame is replaced by this resting value, and it must match or the wheel jumps.
+    dom.setRotation(to);
+    rotation = to;
+
+    dom.wheel.classList.add("is-spinning");
+    // Force a layout flush so the animation has a committed start state before the
+    // class takes effect in the same task.
     void dom.wheel.offsetHeight;
-    dom.setRotation(rotation);
 
     let done = false;
     const finish = (): void => {
@@ -97,10 +114,11 @@ export function createAnimator(
       done = true;
       spinning = false;
       clearTimeout(timer);
-      dom.wheel.removeEventListener("transitionend", finish);
-      hooks.onResult(resolveLanding(laid, restAngle, { magnetism: cfg.magnetism, seamBandDeg: cfg.seamBandDeg }));
+      dom.wheel.removeEventListener("animationend", finish);
+      dom.wheel.classList.remove("is-spinning");
+      hooks.onResult(result);
     };
-    dom.wheel.addEventListener("transitionend", finish, { once: true });
+    dom.wheel.addEventListener("animationend", finish, { once: true });
     const timer = setTimeout(finish, cfg.spinDurationSec * 1000 + SETTLE_GRACE_MS);
     if (hooks.onTick) driveTicks(dom.wheel, laid.length, hooks.onTick, () => done);
   };

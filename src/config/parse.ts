@@ -1,4 +1,4 @@
-import { parseSliceList, type Slice } from "./slices.js";
+import { parseSliceList, resolveWeights, type Slice } from "./slices.js";
 import type { ConfigError, Parsed } from "./errors.js";
 import { deg, type Degrees } from "../model/units.js";
 import type { FieldData } from "../se/types.js";
@@ -31,6 +31,9 @@ export interface WheelConfig {
   winSound: string | undefined;
   tickSound: string | undefined;
   disableConfetti: boolean;
+  normalizeWeights: boolean;
+  disableSound: boolean;
+  disableTickSound: boolean;
 }
 
 const str = (v: unknown, dflt: string): string => (typeof v === "string" ? v : dflt);
@@ -48,12 +51,14 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
   const errors: ConfigError[] = [];
   let slices: Slice[] = [];
 
+  const normalizeWeights = bool(fieldData.normalizeWeights, FIELD_DEFAULTS.normalizeWeights as boolean);
+
   if (fieldData.sliceEntries === undefined) {
     errors.push({ kind: "missing-field", key: "sliceEntries" });
   } else if (typeof fieldData.sliceEntries === "string") {
     const parsed = parseSliceList(fieldData.sliceEntries);
     if (parsed.kind === "error") errors.push(...parsed.errors);
-    else slices = parsed.value;
+    else slices = resolveWeights(parsed.value, normalizeWeights);
   } else {
     errors.push({ kind: "bad-field-type", key: "sliceEntries" });
   }
@@ -109,6 +114,9 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       winSound: opt(fieldData.soundWin),
       tickSound: opt(fieldData.soundTick),
       disableConfetti: bool(fieldData.disableConfetti, FIELD_DEFAULTS.disableConfetti as boolean),
+      normalizeWeights,
+      disableSound: bool(fieldData.disableSound, FIELD_DEFAULTS.disableSound as boolean),
+      disableTickSound: bool(fieldData.disableTickSound, FIELD_DEFAULTS.disableTickSound as boolean),
     },
   };
 }

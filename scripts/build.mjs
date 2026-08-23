@@ -202,12 +202,30 @@ function demoHtml() {
   .f-slider-wrap { display: flex; align-items: center; gap: 10px; }
   .f-slider-wrap input[type="range"] { flex: 1; }
   .f-slider-val { font-family: "Courier New", Courier, monospace; font-size: 12px; color: #cfcde0; min-width: 3.5em; text-align: right; }
+  .f-hint { font-size: 11px; color: #8b88a8; margin-top: 4px; line-height: 1.35; }
+  #share {
+    display: block;
+    width: 100%;
+    margin-top: 8px;
+    background: #2a2836;
+    color: #cfcde0;
+    border: 1px solid #4a4760;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  #share:hover { background: #35323f; }
+  #share-status { font-size: 11px; color: #8b88a8; margin-top: 4px; min-height: 14px; }
+  #weights-readout { font-family: "Courier New", Courier, monospace; font-size: 12px; color: #cfcde0; line-height: 1.5; }
 </style>
 </head><body>
 <div id="panel">
   <div id="panel-head">
     <h1>Wheel Settings Playground</h1>
     <button id="spin" type="button">Spin the Wheel</button>
+    <button id="share" type="button">Copy share link</button>
+    <div id="share-status"></div>
     <a id="back" href="./index.html">instructions</a>
   </div>
   <div id="panel-body"></div>
@@ -221,6 +239,36 @@ function demoHtml() {
   var controls = {};
   var remountTimer = null;
   var currentHandle = null;
+
+  // base64url = base64 with +/ -> -/_ and = padding stripped. encodeURIComponent/
+  // decodeURIComponent + escape/unescape round-trips UTF-8 through btoa/atob, which
+  // only accept Latin1.
+  function toBase64Url(str) {
+    var b64 = btoa(unescape(encodeURIComponent(str)));
+    return b64.replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
+  }
+  function fromBase64Url(str) {
+    var b64 = str.replace(/-/g, "+").replace(/_/g, "/");
+    while (b64.length % 4) b64 += "=";
+    return decodeURIComponent(escape(atob(b64)));
+  }
+
+  function loadFieldDataFromHash() {
+    var hash = location.hash.replace(/^#/, "");
+    if (!hash) return null;
+    try {
+      var data = JSON.parse(fromBase64Url(hash));
+      if (data && typeof data === "object") return data;
+    } catch (e) {
+      // malformed hash: fall back to FIELD_DEFS defaults below
+    }
+    return null;
+  }
+
+  var hashFieldData = loadFieldDataFromHash() || {};
+  function initialValue(field) {
+    return Object.prototype.hasOwnProperty.call(hashFieldData, field.key) ? hashFieldData[field.key] : field.value;
+  }
 
   function makeLabel(text) {
     var d = document.createElement("div");
@@ -253,6 +301,7 @@ function demoHtml() {
     var row = document.createElement("div");
     row.className = "f-row";
     var input;
+    var initVal = initialValue(field);
 
     if (field.type === "checkbox") {
       row.className += " f-row-inline";
@@ -260,7 +309,7 @@ function demoHtml() {
       lbl.className = "f-check-label";
       input = document.createElement("input");
       input.type = "checkbox";
-      input.checked = Boolean(field.value);
+      input.checked = Boolean(initVal);
       input.addEventListener("change", remountWheel);
       lbl.appendChild(input);
       var span = document.createElement("span");
@@ -275,7 +324,7 @@ function demoHtml() {
         var opt = document.createElement("option");
         opt.value = key;
         opt.textContent = opts[key];
-        if (key === field.value) opt.selected = true;
+        if (key === initVal) opt.selected = true;
         input.appendChild(opt);
       });
       input.addEventListener("change", remountWheel);
@@ -289,10 +338,10 @@ function demoHtml() {
       input.min = String(field.min);
       input.max = String(field.max);
       input.step = String(field.step || 1);
-      input.value = String(field.value);
+      input.value = String(initVal);
       var out = document.createElement("span");
       out.className = "f-slider-val";
-      out.textContent = String(field.value);
+      out.textContent = String(initVal);
       input.addEventListener("input", function () {
         out.textContent = input.value;
         scheduleRemount(250);
@@ -304,14 +353,14 @@ function demoHtml() {
       row.appendChild(makeLabel(field.label));
       input = document.createElement("input");
       input.type = "color";
-      input.value = typeof field.value === "string" && field.value ? field.value : "#ffffff";
+      input.value = typeof initVal === "string" && initVal ? initVal : "#ffffff";
       input.addEventListener("input", function () { scheduleRemount(250); });
       row.appendChild(input);
     } else if (field.type === "number") {
       row.appendChild(makeLabel(field.label));
       input = document.createElement("input");
       input.type = "number";
-      input.value = String(field.value);
+      input.value = String(initVal);
       input.addEventListener("input", function () { scheduleRemount(250); });
       row.appendChild(input);
     } else {
@@ -319,14 +368,22 @@ function demoHtml() {
       row.appendChild(makeLabel(field.label));
       input = document.createElement("input");
       input.type = "text";
-      input.value = field.value === undefined ? "" : String(field.value);
+      input.value = initVal === undefined ? "" : String(initVal);
       input.addEventListener("input", function () { scheduleRemount(250); });
       row.appendChild(input);
     }
 
     body.appendChild(row);
+    if (field.hint) {
+      var hint = document.createElement("div");
+      hint.className = "f-hint";
+      hint.textContent = field.hint;
+      row.appendChild(hint);
+    }
     controls[field.key] = { field: field, el: input };
   });
+
+  var weightsBody = groupBody("Computed Slice Weights");
 
   function readValue(entry) {
     if (entry.field.type === "checkbox") return entry.el.checked;
@@ -342,14 +399,64 @@ function demoHtml() {
     return data;
   }
 
+  function renderWeights(fieldData) {
+    weightsBody.innerHTML = "";
+    var parsed = window.Wheel.parseConfig(fieldData);
+    var readout = document.createElement("div");
+    readout.id = "weights-readout";
+    if (!parsed || parsed.kind !== "ok") {
+      readout.textContent = "(invalid slice config)";
+    } else {
+      var slices = parsed.value.slices;
+      var total = 0;
+      slices.forEach(function (s) { total += s.weight; });
+      slices.forEach(function (s) {
+        var pct = total > 0 ? (s.weight / total) * 100 : 0;
+        var row = document.createElement("div");
+        row.textContent = s.text + ": " + pct.toFixed(1) + "%";
+        readout.appendChild(row);
+      });
+    }
+    weightsBody.appendChild(readout);
+  }
+
+  function syncHash(fieldData) {
+    try {
+      var encoded = toBase64Url(JSON.stringify(fieldData));
+      history.replaceState(null, "", "#" + encoded);
+    } catch (e) {
+      // hash sync is best-effort; never block a remount over it
+    }
+  }
+
   function remountWheel() {
     document.querySelectorAll(".wheel-container, .wheel-error").forEach(function (e) { e.remove(); });
-    var result = window.Wheel.mountWidget(document, { fieldData: collectFieldData() });
+    var fieldData = collectFieldData();
+    var result = window.Wheel.mountWidget(document, { fieldData: fieldData });
     currentHandle = result && "spin" in result ? result : null;
+    renderWeights(fieldData);
+    syncHash(fieldData);
   }
 
   document.getElementById("spin").addEventListener("click", function () {
     if (currentHandle && currentHandle.spin) currentHandle.spin();
+  });
+
+  document.getElementById("share").addEventListener("click", function () {
+    var status = document.getElementById("share-status");
+    if (!navigator.clipboard || !navigator.clipboard.writeText) {
+      if (status) status.textContent = "Clipboard unavailable";
+      return;
+    }
+    navigator.clipboard.writeText(location.href).then(
+      function () {
+        if (status) status.textContent = "Copied!";
+        setTimeout(function () { if (status) status.textContent = ""; }, 1500);
+      },
+      function () {
+        if (status) status.textContent = "Copy failed";
+      },
+    );
   });
 
   remountWheel();

@@ -3,6 +3,8 @@ import { parseConfig } from "../src/config/parse.js";
 import { buildWheel } from "../src/render/wheel.js";
 import { createAnimator } from "../src/spin/animator.js";
 import type { SpinResult } from "../src/model/spin.js";
+import { layout, sliceAtAngle, sliceCenterDeg } from "../src/model/geometry.js";
+import { deg, normalizeDeg } from "../src/model/units.js";
 
 const cfg = (() => {
   const r = parseConfig({ sliceEntries: "A, B, C, D", spinDuration: 0.01, seamBand: 0 });
@@ -56,6 +58,42 @@ describe("animator", () => {
 
     expect(r2).toBeGreaterThan(r1);
     expect(count).toBe(2);
+    vi.useRealTimers();
+  });
+
+  it("magnetism on: settles with a slice center under the top pointer, not the raw angle", async () => {
+    vi.useFakeTimers();
+    const magnetCfg = (() => {
+      const r = parseConfig({ sliceEntries: "A, B, C, D", spinDuration: 0.01, seamBand: 0, magnetism: true });
+      if (r.kind !== "ok") throw new Error("bad");
+      return r.value;
+    })();
+    const dom = buildWheel(document, magnetCfg);
+    const rng = () => 0.37; // arbitrary seed: raw rest angle is not already a slice center
+    const anim = createAnimator(dom, magnetCfg, { onResult: () => {} }, rng);
+    anim.spin();
+    await vi.advanceTimersByTimeAsync(magnetCfg.spinDurationSec * 1000 + 100);
+
+    const finalRotation = parseFloat(dom.wheel.style.getPropertyValue("--spin-degree"));
+    const pointerAngle = normalizeDeg(deg(90 - finalRotation));
+    const laid = layout(magnetCfg.slices);
+    const covered = sliceAtAngle(laid, deg(rng() * 360));
+    const expectedCenter = sliceCenterDeg(laid.find((l) => l.index === covered)!);
+    expect(pointerAngle as number).toBeCloseTo(expectedCenter as number, 5);
+    vi.useRealTimers();
+  });
+
+  it("magnetism off: settles with the raw picked angle under the top pointer", async () => {
+    vi.useFakeTimers();
+    const dom = buildWheel(document, cfg); // cfg has magnetism false, seamBand 0
+    const rng = () => 0.1; // raw rest angle = 0.1 * 360 = 36deg
+    const anim = createAnimator(dom, cfg, { onResult: () => {} }, rng);
+    anim.spin();
+    await vi.advanceTimersByTimeAsync(cfg.spinDurationSec * 1000 + 100);
+
+    const finalRotation = parseFloat(dom.wheel.style.getPropertyValue("--spin-degree"));
+    const pointerAngle = normalizeDeg(deg(90 - finalRotation));
+    expect(pointerAngle as number).toBeCloseTo(36, 5);
     vi.useRealTimers();
   });
 });
