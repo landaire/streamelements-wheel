@@ -116,23 +116,244 @@ function landingHtml() {
 `;
 }
 
-// Hosted demo page for GitHub Pages: root-relative ./wheel.js, sample fieldData.
+// Hosted demo page for GitHub Pages: root-relative ./wheel.js. A settings playground --
+// one control per window.Wheel.FIELD_DEFS entry, generated dynamically so it can never
+// drift out of sync with the field schema. Changing a control re-mounts the wheel live.
 function demoHtml() {
   return `<!doctype html>
 <html lang="en"><head><meta charset="utf-8" /><title>Spinning Wheel - Demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<style>body{margin:0;display:grid;place-items:center;min-height:100vh;background:#1b1b22}
-  #spin{position:fixed;top:12px;left:12px;z-index:10;background:#ff8fa3;color:#1b1b22;border:none;border-radius:8px;padding:10px 18px;font-weight:700;font-family:sans-serif;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.4)}
-  #spin:hover{background:#ffa8b8}
-  #back{position:fixed;top:12px;right:12px;z-index:10;color:#b8bdd6;font-family:monospace;font-size:12px}</style>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100vh; background: #1b1b22; }
+  body {
+    padding-left: 380px;
+    display: grid;
+    place-items: center;
+    font-family: sans-serif;
+  }
+  .wheel-error { color: #fff; font-family: monospace; padding: 20px; max-width: 460px; }
+  #panel {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 380px;
+    height: 100vh;
+    overflow-y: auto;
+    background: rgba(24, 22, 30, 0.92);
+    color: #e9e8f2;
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    z-index: 20;
+  }
+  #panel-head {
+    position: sticky;
+    top: 0;
+    background: rgba(24, 22, 30, 0.98);
+    padding: 16px 18px 14px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    z-index: 1;
+  }
+  #panel-head h1 { font-size: 15px; margin: 0 0 10px; letter-spacing: 0.5px; }
+  #spin {
+    display: block;
+    width: 100%;
+    background: #ff8fa3;
+    color: #1b1b22;
+    border: none;
+    border-radius: 8px;
+    padding: 12px 18px;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  }
+  #spin:hover { background: #ffa8b8; }
+  #back { display: inline-block; margin-top: 10px; color: #b8bdd6; font-family: monospace; font-size: 12px; }
+  #panel-body { padding: 6px 18px 24px; }
+  .f-group { margin-top: 18px; }
+  .f-group h3 {
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #9a97b8;
+    margin: 0 0 8px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 4px;
+  }
+  .f-row { margin-bottom: 10px; }
+  .f-label { font-size: 12px; color: #cfcde0; margin-bottom: 4px; }
+  .f-row-inline .f-check-label { display: flex; align-items: center; gap: 8px; font-size: 12px; color: #cfcde0; cursor: pointer; }
+  .f-row input[type="text"],
+  .f-row input[type="number"],
+  .f-row select {
+    width: 100%;
+    background: #2a2836;
+    color: #f1f0f7;
+    border: 1px solid #4a4760;
+    border-radius: 5px;
+    padding: 7px 8px;
+    font-size: 13px;
+    font-family: inherit;
+  }
+  .f-row input[type="text"] { font-family: "Courier New", Courier, monospace; }
+  .f-row input[type="checkbox"] { width: 16px; height: 16px; }
+  .f-row input[type="color"] { width: 100%; height: 32px; border: 1px solid #4a4760; border-radius: 5px; background: #2a2836; padding: 2px; }
+  .f-slider-wrap { display: flex; align-items: center; gap: 10px; }
+  .f-slider-wrap input[type="range"] { flex: 1; }
+  .f-slider-val { font-family: "Courier New", Courier, monospace; font-size: 12px; color: #cfcde0; min-width: 3.5em; text-align: right; }
+</style>
 </head><body>
-<button id="spin">Spin</button>
-<a id="back" href="./index.html">instructions</a>
+<div id="panel">
+  <div id="panel-head">
+    <h1>Wheel Settings Playground</h1>
+    <button id="spin" type="button">Spin the Wheel</button>
+    <a id="back" href="./index.html">instructions</a>
+  </div>
+  <div id="panel-body"></div>
+</div>
 <script src="./wheel.js"></script>
 <script>
-  var fd = { sliceEntries: "Eat a lemon, Song request [5%], Ranked games, Draw subs [10], Push-ups, Mystery", wheelStyle: "fullwheel", wheelTitle: "50 points to spin", spinDuration: 5, magnetism: false, seamBand: 3, centerIcon: "heart", colorScheme: "sweetheart-original", hubMode: "text", hubTextStyle: "fit", hubText: "SPIN\\nTHE\\nWHEEL" };
-  var handle = window.Wheel.mountWidget(document, { fieldData: fd });
-  document.getElementById("spin").addEventListener("click", function(){ handle.spin && handle.spin(); });
+(function () {
+  var FIELD_DEFS = window.Wheel.FIELD_DEFS;
+  var panelBody = document.getElementById("panel-body");
+  var groupBodies = {};
+  var controls = {};
+  var remountTimer = null;
+  var currentHandle = null;
+
+  function makeLabel(text) {
+    var d = document.createElement("div");
+    d.className = "f-label";
+    d.textContent = text;
+    return d;
+  }
+
+  function groupBody(name) {
+    if (groupBodies[name]) return groupBodies[name];
+    var wrap = document.createElement("div");
+    wrap.className = "f-group";
+    var h = document.createElement("h3");
+    h.textContent = name;
+    wrap.appendChild(h);
+    var body = document.createElement("div");
+    wrap.appendChild(body);
+    panelBody.appendChild(wrap);
+    groupBodies[name] = body;
+    return body;
+  }
+
+  function scheduleRemount(delayMs) {
+    if (remountTimer !== null) clearTimeout(remountTimer);
+    remountTimer = setTimeout(remountWheel, delayMs);
+  }
+
+  FIELD_DEFS.forEach(function (field) {
+    var body = groupBody(field.group);
+    var row = document.createElement("div");
+    row.className = "f-row";
+    var input;
+
+    if (field.type === "checkbox") {
+      row.className += " f-row-inline";
+      var lbl = document.createElement("label");
+      lbl.className = "f-check-label";
+      input = document.createElement("input");
+      input.type = "checkbox";
+      input.checked = Boolean(field.value);
+      input.addEventListener("change", remountWheel);
+      lbl.appendChild(input);
+      var span = document.createElement("span");
+      span.textContent = field.label;
+      lbl.appendChild(span);
+      row.appendChild(lbl);
+    } else if (field.type === "dropdown") {
+      row.appendChild(makeLabel(field.label));
+      input = document.createElement("select");
+      var opts = field.options || {};
+      Object.keys(opts).forEach(function (key) {
+        var opt = document.createElement("option");
+        opt.value = key;
+        opt.textContent = opts[key];
+        if (key === field.value) opt.selected = true;
+        input.appendChild(opt);
+      });
+      input.addEventListener("change", remountWheel);
+      row.appendChild(input);
+    } else if (field.type === "slider") {
+      row.appendChild(makeLabel(field.label));
+      var sliderWrap = document.createElement("div");
+      sliderWrap.className = "f-slider-wrap";
+      input = document.createElement("input");
+      input.type = "range";
+      input.min = String(field.min);
+      input.max = String(field.max);
+      input.step = String(field.step || 1);
+      input.value = String(field.value);
+      var out = document.createElement("span");
+      out.className = "f-slider-val";
+      out.textContent = String(field.value);
+      input.addEventListener("input", function () {
+        out.textContent = input.value;
+        scheduleRemount(250);
+      });
+      sliderWrap.appendChild(input);
+      sliderWrap.appendChild(out);
+      row.appendChild(sliderWrap);
+    } else if (field.type === "colorpicker") {
+      row.appendChild(makeLabel(field.label));
+      input = document.createElement("input");
+      input.type = "color";
+      input.value = typeof field.value === "string" && field.value ? field.value : "#ffffff";
+      input.addEventListener("input", function () { scheduleRemount(250); });
+      row.appendChild(input);
+    } else if (field.type === "number") {
+      row.appendChild(makeLabel(field.label));
+      input = document.createElement("input");
+      input.type = "number";
+      input.value = String(field.value);
+      input.addEventListener("input", function () { scheduleRemount(250); });
+      row.appendChild(input);
+    } else {
+      // text, sound-input
+      row.appendChild(makeLabel(field.label));
+      input = document.createElement("input");
+      input.type = "text";
+      input.value = field.value === undefined ? "" : String(field.value);
+      input.addEventListener("input", function () { scheduleRemount(250); });
+      row.appendChild(input);
+    }
+
+    body.appendChild(row);
+    controls[field.key] = { field: field, el: input };
+  });
+
+  function readValue(entry) {
+    if (entry.field.type === "checkbox") return entry.el.checked;
+    if (entry.field.type === "number" || entry.field.type === "slider") return Number(entry.el.value);
+    return entry.el.value;
+  }
+
+  function collectFieldData() {
+    var data = {};
+    Object.keys(controls).forEach(function (key) {
+      data[key] = readValue(controls[key]);
+    });
+    return data;
+  }
+
+  function remountWheel() {
+    document.querySelectorAll(".wheel-container, .wheel-error").forEach(function (e) { e.remove(); });
+    var result = window.Wheel.mountWidget(document, { fieldData: collectFieldData() });
+    currentHandle = result && "spin" in result ? result : null;
+  }
+
+  document.getElementById("spin").addEventListener("click", function () {
+    if (currentHandle && currentHandle.spin) currentHandle.spin();
+  });
+
+  remountWheel();
+})();
 </script>
 </body></html>
 `;

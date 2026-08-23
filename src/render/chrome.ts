@@ -67,7 +67,12 @@ export function fitHubText(wrap: HTMLElement): void {
 }
 
 // Curved hub text flows along a circular textPath. jsdom has no font metrics, so the
-// font-size is a circumference-based heuristic rather than a measured fit.
+// font-size is an arc-length heuristic rather than a measured fit.
+//
+// The path spans the top semicircle only (9 o'clock, over 12 o'clock, to 3 o'clock),
+// left-to-right. Previously the path traced the full circle; a startOffset of 50%
+// landed exactly on the seam between the two halves (3 o'clock), producing a cramped
+// arc on the right instead of text centered across the top.
 function buildCurvedText(doc: Document, text: string): SVGElement {
   const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
   svg.setAttribute("viewBox", "0 0 100 100");
@@ -77,13 +82,15 @@ function buildCurvedText(doc: Document, text: string): SVGElement {
   const path = doc.createElementNS(SVG_NS, "path");
   const pathId = "hub-curve-path-" + Math.random().toString(36).slice(2);
   path.setAttribute("id", pathId);
-  path.setAttribute("d", "M 50 50 m -34 0 a 34 34 0 1 1 68 0 a 34 34 0 1 1 -68 0");
+  const radius = 34;
+  path.setAttribute("d", `M ${50 - radius} 50 A ${radius} ${radius} 0 0 1 ${50 + radius} 50`);
   defs.appendChild(path);
   svg.appendChild(defs);
 
   const len = Math.max(text.length, 1);
-  const circumference = 2 * Math.PI * 34;
-  const fontSize = Math.max(4, Math.min(11, (circumference * 0.85) / len));
+  const arcLength = Math.PI * radius; // top half of the circumference
+  // Average glyph advance for bold caps is roughly 0.6em; leave a small margin.
+  const fontSize = Math.max(4, Math.min(16, arcLength / (len * 0.62)));
 
   const textEl = doc.createElementNS(SVG_NS, "text");
   textEl.setAttribute("class", "hub-text-curve-text");
@@ -100,11 +107,17 @@ function buildCurvedText(doc: Document, text: string): SVGElement {
 
 function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): void {
   if (cfg.hubMode === "image") {
+    // Inset the image into the centerpiece rather than covering it: the surrounding
+    // ring keeps the knob's bevel/rim visible, and a gloss overlay sits on top of the
+    // image itself so it still reads as a physical glossy button, not a flat photo.
+    const imgWrap = el(doc, "hub-image-wrap");
     const img = doc.createElement("img");
     img.className = "hub-image";
     img.src = cfg.hubImage;
     img.alt = "";
-    centerpiece.appendChild(img);
+    imgWrap.appendChild(img);
+    centerpiece.appendChild(imgWrap);
+    centerpiece.appendChild(el(doc, "hub-image-gloss"));
     return;
   }
   if (cfg.hubMode === "text") {

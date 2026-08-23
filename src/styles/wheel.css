@@ -96,7 +96,28 @@
   color: #fff;
 }
 .hub-icon-svg { width: 46%; height: 46%; }
-.hub-image { width: 100%; height: 100%; object-fit: cover; border-radius: 50%; display: block; }
+/* The image sits inset from the centerpiece edge so the knob's own bevel/rim shows
+   as a ring around it, and a gloss layer on top keeps the glossy-button look. */
+.hub-image-wrap {
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow:
+    inset 0 2px 4px rgba(0, 0, 0, 0.5),
+    inset 0 -1px 2px rgba(255, 255, 255, 0.25);
+}
+.hub-image { width: 100%; height: 100%; object-fit: cover; display: block; }
+.hub-image-gloss {
+  position: absolute;
+  inset: 14%;
+  border-radius: 50%;
+  pointer-events: none;
+  background:
+    radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.55), rgba(255, 255, 255, 0) 45%),
+    radial-gradient(circle at 68% 84%, rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0) 55%);
+  mix-blend-mode: soft-light;
+}
 .hub-text {
   width: 84%;
   text-align: center;
