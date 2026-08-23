@@ -1,0 +1,13 @@
+# Original obfuscated loader (reference only)
+loader.js
+
+# Reverse-engineering scratch + recovered third-party assets (never ship)
+scratchpad/
+
+# Local design docs / specs (kept out of history by request)
+docs/superpowers/
+
+# Node / build
+node_modules/
+dist/
+*.log
