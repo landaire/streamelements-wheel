@@ -218,6 +218,25 @@ function demoHtml() {
   #share:hover { background: #35323f; }
   #share-status { font-size: 11px; color: #8b88a8; margin-top: 4px; min-height: 14px; }
   #weights-readout { font-family: "Courier New", Courier, monospace; font-size: 12px; color: #cfcde0; line-height: 1.5; }
+  .ed-intro { font-size: 11px; color: #8b88a8; margin: 0 0 10px; line-height: 1.4; }
+  .editor-section { margin-bottom: 4px; }
+  .editor-section summary { cursor: pointer; font-size: 12px; font-weight: 600; color: #cfcde0; padding: 6px 0; }
+  .ed-list { max-height: 240px; overflow-y: auto; padding-right: 4px; margin: 4px 0 8px; }
+  .ed-hint { font-size: 11px; color: #8b88a8; padding: 4px 0; }
+  .ed-row { background: #221f2c; border: 1px solid #3a3750; border-radius: 6px; padding: 8px; margin-bottom: 6px; }
+  .ed-row-controls { display: flex; gap: 6px; margin-top: 6px; align-items: center; }
+  .ed-input { background: #2a2836; color: #f1f0f7; border: 1px solid #4a4760; border-radius: 5px; padding: 6px 7px; font-size: 12px; font-family: inherit; }
+  .ed-input-wide { width: 100%; box-sizing: border-box; }
+  .ed-input-num { width: 58px; flex: none; }
+  .ed-color { width: 34px; height: 28px; padding: 2px; flex: none; }
+  .ed-select { flex: 1; min-width: 0; }
+  .ed-btn { background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 5px; padding: 5px 8px; font-size: 11px; cursor: pointer; flex: none; }
+  .ed-btn:hover { background: #35323f; }
+  .ed-btn:disabled { opacity: 0.4; cursor: default; }
+  .ed-btn-remove { color: #ff9f9f; border-color: #6a3a3a; margin-left: auto; }
+  .ed-add-row { display: flex; gap: 8px; margin-top: 4px; }
+  .ed-add-btn { flex: 1; background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 6px; padding: 8px 10px; font-size: 12px; cursor: pointer; }
+  .ed-add-btn:hover { background: #35323f; }
 </style>
 </head><body>
 <div id="panel">
@@ -239,6 +258,22 @@ function demoHtml() {
   var controls = {};
   var remountTimer = null;
   var currentHandle = null;
+
+  var editorState = { categories: [], items: [] };
+  var editorCatSeq = 0;
+  var editorItemSeq = 0;
+  var DEFAULT_CAT_COLORS = ["#ff8fa3", "#8fd6ff", "#c9a0ff", "#ffd98f", "#8fffb0", "#ff9f8f"];
+  var catListEl = null;
+  var itemListEl = null;
+
+  function genCatId() {
+    editorCatSeq += 1;
+    return "cat-" + editorCatSeq + "-" + Math.random().toString(36).slice(2, 7);
+  }
+  function genItemUid() {
+    editorItemSeq += 1;
+    return "item-" + editorItemSeq + "-" + Math.random().toString(36).slice(2, 7);
+  }
 
   // base64url = base64 with +/ -> -/_ and = padding stripped. encodeURIComponent/
   // decodeURIComponent + escape/unescape round-trips UTF-8 through btoa/atob, which
@@ -271,6 +306,37 @@ function demoHtml() {
   function initialValue(field) {
     return Object.prototype.hasOwnProperty.call(hashFieldData, field.key) ? hashFieldData[field.key] : field.value;
   }
+
+  // Populates the visual editor from a hash-carried advancedConfig JSON, so a shared
+  // link with categories/items reopens with the editor pre-filled, not just the raw
+  // text field.
+  function loadEditorFromHash() {
+    var raw = hashFieldData.advancedConfig;
+    if (typeof raw !== "string" || !raw) return;
+    try {
+      var parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.categories) || !Array.isArray(parsed.items)) return;
+      editorState.categories = parsed.categories.map(function (c) {
+        return {
+          id: String(c.id),
+          name: typeof c.name === "string" ? c.name : String(c.id),
+          weight: Number(c.weight),
+          color: typeof c.color === "string" && c.color ? c.color : "#ff8fa3",
+        };
+      });
+      editorState.items = parsed.items.map(function (it) {
+        return {
+          uid: genItemUid(),
+          text: typeof it.text === "string" ? it.text : "",
+          weight: Number(it.weight),
+          categoryId: typeof it.categoryId === "string" ? it.categoryId : "",
+        };
+      });
+    } catch (e) {
+      // malformed hash advancedConfig: leave the editor empty, simple controls still work
+    }
+  }
+  loadEditorFromHash();
 
   function makeLabel(text) {
     var d = document.createElement("div");
@@ -385,6 +451,244 @@ function demoHtml() {
     controls[field.key] = { field: field, el: input };
   });
 
+  var editorGroupBody = groupBody("Wheel Editor");
+  editorGroupBody.insertAdjacentHTML(
+    "beforeend",
+    '<div class="ed-intro">Build categories and items visually. Adding at least one item ' +
+      "activates two-level odds (category share x item share) and replaces the simple slice " +
+      'list above.</div>' +
+      '<details class="editor-section" open>' +
+      "<summary>Categories</summary>" +
+      '<div id="ed-cat-list" class="ed-list"></div>' +
+      '<button id="ed-add-cat" type="button" class="ed-add-btn">Add category</button>' +
+      "</details>" +
+      '<details class="editor-section" open>' +
+      "<summary>Items</summary>" +
+      '<div id="ed-item-list" class="ed-list"></div>' +
+      '<div class="ed-add-row">' +
+      '<button id="ed-add-item" type="button" class="ed-add-btn">Add item</button>' +
+      '<button id="ed-shuffle" type="button" class="ed-add-btn">Shuffle</button>' +
+      "</div>" +
+      "</details>",
+  );
+  catListEl = document.getElementById("ed-cat-list");
+  itemListEl = document.getElementById("ed-item-list");
+
+  function buildCategoryOptions(select, selectedId) {
+    select.innerHTML = "";
+    var noneOpt = document.createElement("option");
+    noneOpt.value = "";
+    noneOpt.textContent = "(Uncategorized)";
+    select.appendChild(noneOpt);
+    editorState.categories.forEach(function (cat) {
+      var opt = document.createElement("option");
+      opt.value = cat.id;
+      opt.textContent = cat.name || cat.id;
+      select.appendChild(opt);
+    });
+    select.value = selectedId || "";
+  }
+
+  function renderItemCategoryOptions() {
+    var selects = itemListEl.querySelectorAll("select.ed-select");
+    selects.forEach(function (sel, idx) {
+      var item = editorState.items[idx];
+      if (item) buildCategoryOptions(sel, item.categoryId);
+    });
+  }
+
+  function renderCategories() {
+    catListEl.innerHTML = "";
+    if (editorState.categories.length === 0) {
+      var hint = document.createElement("div");
+      hint.className = "ed-hint";
+      hint.textContent = "No categories yet. Items without a category are Uncategorized.";
+      catListEl.appendChild(hint);
+    }
+    editorState.categories.forEach(function (cat) {
+      var row = document.createElement("div");
+      row.className = "ed-row";
+
+      var nameInput = document.createElement("input");
+      nameInput.type = "text";
+      nameInput.className = "ed-input ed-input-wide";
+      nameInput.value = cat.name;
+      nameInput.addEventListener("input", function () {
+        cat.name = nameInput.value;
+        renderItemCategoryOptions();
+        scheduleRemount(200);
+      });
+
+      var controls = document.createElement("div");
+      controls.className = "ed-row-controls";
+
+      var weightInput = document.createElement("input");
+      weightInput.type = "number";
+      weightInput.step = "any";
+      weightInput.className = "ed-input ed-input-num";
+      weightInput.value = String(cat.weight);
+      weightInput.addEventListener("input", function () {
+        cat.weight = Number(weightInput.value);
+        scheduleRemount(200);
+      });
+
+      var colorInput = document.createElement("input");
+      colorInput.type = "color";
+      colorInput.className = "ed-input ed-color";
+      colorInput.value = cat.color;
+      colorInput.addEventListener("input", function () {
+        cat.color = colorInput.value;
+        scheduleRemount(200);
+      });
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "ed-btn ed-btn-remove";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", function () {
+        editorState.categories = editorState.categories.filter(function (c) { return c.id !== cat.id; });
+        editorState.items.forEach(function (it) {
+          if (it.categoryId === cat.id) it.categoryId = "";
+        });
+        renderCategories();
+        renderItems();
+        remountWheel();
+      });
+
+      controls.appendChild(weightInput);
+      controls.appendChild(colorInput);
+      controls.appendChild(removeBtn);
+      row.appendChild(nameInput);
+      row.appendChild(controls);
+      catListEl.appendChild(row);
+    });
+  }
+
+  function renderItems() {
+    itemListEl.innerHTML = "";
+    if (editorState.items.length === 0) {
+      var hint = document.createElement("div");
+      hint.className = "ed-hint";
+      hint.textContent = "No items yet. The simple slice list above is used until an item is added.";
+      itemListEl.appendChild(hint);
+    }
+    editorState.items.forEach(function (item, idx) {
+      var row = document.createElement("div");
+      row.className = "ed-row";
+
+      var textInput = document.createElement("input");
+      textInput.type = "text";
+      textInput.className = "ed-input ed-input-wide";
+      textInput.value = item.text;
+      textInput.addEventListener("input", function () {
+        item.text = textInput.value;
+        scheduleRemount(200);
+      });
+
+      var controls = document.createElement("div");
+      controls.className = "ed-row-controls";
+
+      var weightInput = document.createElement("input");
+      weightInput.type = "number";
+      weightInput.step = "any";
+      weightInput.className = "ed-input ed-input-num";
+      weightInput.value = String(item.weight);
+      weightInput.addEventListener("input", function () {
+        item.weight = Number(weightInput.value);
+        scheduleRemount(200);
+      });
+
+      var catSelect = document.createElement("select");
+      catSelect.className = "ed-input ed-select";
+      buildCategoryOptions(catSelect, item.categoryId);
+      catSelect.addEventListener("change", function () {
+        item.categoryId = catSelect.value;
+        remountWheel();
+      });
+
+      var upBtn = document.createElement("button");
+      upBtn.type = "button";
+      upBtn.className = "ed-btn";
+      upBtn.textContent = "Up";
+      upBtn.disabled = idx === 0;
+      upBtn.addEventListener("click", function () {
+        if (idx === 0) return;
+        var tmp = editorState.items[idx - 1];
+        editorState.items[idx - 1] = editorState.items[idx];
+        editorState.items[idx] = tmp;
+        renderItems();
+        remountWheel();
+      });
+
+      var downBtn = document.createElement("button");
+      downBtn.type = "button";
+      downBtn.className = "ed-btn";
+      downBtn.textContent = "Down";
+      downBtn.disabled = idx === editorState.items.length - 1;
+      downBtn.addEventListener("click", function () {
+        if (idx === editorState.items.length - 1) return;
+        var tmp = editorState.items[idx + 1];
+        editorState.items[idx + 1] = editorState.items[idx];
+        editorState.items[idx] = tmp;
+        renderItems();
+        remountWheel();
+      });
+
+      var removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "ed-btn ed-btn-remove";
+      removeBtn.textContent = "Remove";
+      removeBtn.addEventListener("click", function () {
+        editorState.items.splice(idx, 1);
+        renderItems();
+        remountWheel();
+      });
+
+      controls.appendChild(weightInput);
+      controls.appendChild(catSelect);
+      controls.appendChild(upBtn);
+      controls.appendChild(downBtn);
+      controls.appendChild(removeBtn);
+      row.appendChild(textInput);
+      row.appendChild(controls);
+      itemListEl.appendChild(row);
+    });
+  }
+
+  document.getElementById("ed-add-cat").addEventListener("click", function () {
+    var color = DEFAULT_CAT_COLORS[editorState.categories.length % DEFAULT_CAT_COLORS.length];
+    editorState.categories.push({
+      id: genCatId(),
+      name: "Category " + (editorState.categories.length + 1),
+      weight: 1,
+      color: color,
+    });
+    renderCategories();
+    renderItems();
+    remountWheel();
+  });
+
+  document.getElementById("ed-add-item").addEventListener("click", function () {
+    editorState.items.push({ uid: genItemUid(), text: "New item", weight: 1, categoryId: "" });
+    renderItems();
+    remountWheel();
+  });
+
+  document.getElementById("ed-shuffle").addEventListener("click", function () {
+    var arr = editorState.items;
+    for (var i = arr.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = arr[i];
+      arr[i] = arr[j];
+      arr[j] = tmp;
+    }
+    renderItems();
+    remountWheel();
+  });
+
+  renderCategories();
+  renderItems();
+
   var weightsBody = groupBody("Computed Slice Weights");
 
   function readValue(entry) {
@@ -398,7 +702,26 @@ function demoHtml() {
     Object.keys(controls).forEach(function (key) {
       data[key] = readValue(controls[key]);
     });
+    // The visual editor is the source of truth for advancedConfig whenever it has at
+    // least one item; an empty editor falls back to whatever the raw text field holds
+    // (normally "", i.e. the simple sliceEntries path).
+    if (editorState.items.length > 0) {
+      data.advancedConfig = JSON.stringify(serializeEditor());
+    }
     return data;
+  }
+
+  function serializeEditor() {
+    return {
+      categories: editorState.categories.map(function (cat) {
+        return { id: cat.id, name: cat.name, weight: cat.weight, color: cat.color };
+      }),
+      items: editorState.items.map(function (item) {
+        var out = { text: item.text, weight: item.weight };
+        if (item.categoryId) out.categoryId = item.categoryId;
+        return out;
+      }),
+    };
   }
 
   function renderWeights(fieldData) {
