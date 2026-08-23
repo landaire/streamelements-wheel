@@ -107,6 +107,13 @@
   overflow: hidden;
   color: #fff;
 }
+.center-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .hub-icon-svg { width: 46%; height: 46%; }
 /* The image sits inset from the centerpiece edge so the knob's own bevel/rim shows
    as a ring around it, and a gloss layer on top keeps the glossy-button look. */
