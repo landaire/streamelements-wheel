@@ -42,6 +42,19 @@ const SCHEME_VARS: Readonly<Record<string, Record<string, string>>> = {
 
 const DEFAULT_SCHEME = FIELD_DEFAULTS.colorScheme as string;
 
+// Custom-mode color-picker fields -> the CSS custom properties the render reads.
+const CUSTOM_VAR_MAP: Readonly<Record<string, string>> = {
+  colorSliceEven: "--slice-bg-even",
+  colorSliceOdd: "--slice-bg-odd",
+  colorSliceBorder: "--slice-border",
+  colorRim: "--rim-color",
+  colorHub: "--centerpiece-bg",
+  colorHubInner: "--hub-inner",
+  colorPlate: "--plate-bg",
+  colorTitle: "--title-color",
+  colorEntry: "--entry-color",
+};
+
 export function resolveScheme(fieldData: FieldData): ColorScheme {
   const raw = typeof fieldData.colorScheme === "string" ? fieldData.colorScheme : DEFAULT_SCHEME;
   if (raw !== "custom") {
@@ -50,10 +63,9 @@ export function resolveScheme(fieldData: FieldData): ColorScheme {
     return { kind: "named", name: raw, vars };
   }
   const vars: Record<string, string> = {};
-  for (const [k, v] of Object.entries(fieldData)) {
-    if (k.startsWith("color") && k !== "colorScheme" && typeof v === "string" && v.length > 0) {
-      vars["--" + k] = v;
-    }
+  for (const [key, cssVar] of Object.entries(CUSTOM_VAR_MAP)) {
+    const v = fieldData[key];
+    if (typeof v === "string" && v.length > 0) vars[cssVar] = v;
   }
   return { kind: "custom", vars };
 }

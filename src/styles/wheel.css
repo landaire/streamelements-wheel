@@ -100,7 +100,7 @@
   transform: translate(-50%, -50%); border-radius: 50%;
   background: radial-gradient(
     circle at 50% 50%,
-    #ffe1f0 0%, #ffe1f0 44%,
+    var(--hub-inner, #ffe1f0) 0%, var(--hub-inner, #ffe1f0) 44%,
     var(--slice-bg-odd, #d9a9e8) 44%, var(--slice-bg-odd, #d9a9e8) 72%,
     var(--centerpiece-bg, #6f2f80) 72%, var(--centerpiece-bg, #6f2f80) 100%
   );

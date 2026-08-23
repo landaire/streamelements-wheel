@@ -323,6 +323,11 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   title.textContent = cfg.title;
   titleWrap.appendChild(title);
   dom.container.appendChild(titleWrap);
+  // Hide the pill entirely while there is no title text (empty title, pre-spin).
+  const syncTitleVisibility = (text: string): void => {
+    titleWrap.style.display = text.trim().length > 0 ? "" : "none";
+  };
+  syncTitleVisibility(cfg.title);
 
   const fitTextEl = centerpiece.querySelector<HTMLElement>(".hub-text-fit");
   const refit = (): void => {
@@ -338,6 +343,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
     title,
     setTitle: (text: string): void => {
       title.textContent = text;
+      syncTitleVisibility(text);
     },
     refit,
   };

@@ -18,18 +18,22 @@ describe("resolveScheme", () => {
     if (r.kind === "named") expect(r.vars["--slice-bg-even"]).toBe("#f8acba");
   });
 
-  it("custom colorScheme with color fields -> custom vars without colorScheme", () => {
+  it("custom colorScheme maps color pickers to the real CSS vars", () => {
     const r = resolveScheme({
       colorScheme: "custom",
-      colorWin: "#ff0000",
-      colorLose: "#00ff00",
-      colorBg: "#0000ff",
+      colorSliceEven: "#112233",
+      colorSliceOdd: "#445566",
+      colorRim: "#778899",
+      colorTitle: "#aabbcc",
+      colorNope: "#ffffff", // unmapped -> ignored
     });
     expect(r.kind).toBe("custom");
     if (r.kind === "custom") {
-      expect(r.vars["--colorWin"]).toBe("#ff0000");
-      expect(r.vars["--colorLose"]).toBe("#00ff00");
-      expect(r.vars["--colorBg"]).toBe("#0000ff");
+      expect(r.vars["--slice-bg-even"]).toBe("#112233");
+      expect(r.vars["--slice-bg-odd"]).toBe("#445566");
+      expect(r.vars["--rim-color"]).toBe("#778899");
+      expect(r.vars["--title-color"]).toBe("#aabbcc");
+      expect(r.vars["--colorNope"]).toBeUndefined();
       expect(r.vars["--colorScheme"]).toBeUndefined();
     }
   });
