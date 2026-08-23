@@ -206,8 +206,8 @@ function buildEmeraldPointer(doc: Document): SVGElement {
   poly("76,20 50,20 50,74 94,56", `url(#crown-r-${uid})`);
   // Table facet: the brightest top-facing cut.
   poly("34,20 66,20 58,32 42,32", `url(#table-${uid})`);
-  // Specular highlight: a small bright glint on the upper-left crown facet.
-  poly("22,26 38,26 28,44", "rgba(255,255,255,0.75)");
+  // Specular highlight: a light reflection hugging the top-left crown facet edges.
+  poly("25,21 41,21 28,40", "rgba(255,255,255,0.55)");
 
   // Crisp facet edges.
   const edges = [

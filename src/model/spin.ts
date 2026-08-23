@@ -41,7 +41,9 @@ export function resolveLanding(
   // Phase 2 config validation will warn when 2*seamBandDeg >= the smallest slice arc.
   const seam = nearestSeam(layout, restAngle);
   if ((seam.dist as number) <= (cfg.seamBandDeg as number)) {
-    return { kind: "seam", between: seam.between, restAngle: normalizeDeg(restAngle) };
+    // Snap the resting angle exactly onto the boundary so "on the line" is literally true:
+    // the pointer comes to rest on the seam between the two slices, not merely near it.
+    return { kind: "seam", between: seam.between, restAngle: seam.seam };
   }
   return { kind: "winner", slice, restAngle: normalizeDeg(restAngle) };
 }

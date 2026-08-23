@@ -39,6 +39,7 @@ export function sliceAtAngle(layouts: readonly SliceLayout[], d: Degrees): Slice
 export interface SeamInfo {
   dist: Degrees;
   between: [SliceIndex, SliceIndex];
+  seam: Degrees; // the boundary angle itself, so a seam landing can snap exactly onto the line
 }
 
 export function nearestSeam(layouts: readonly SliceLayout[], d: Degrees): SeamInfo {
@@ -57,5 +58,6 @@ export function nearestSeam(layouts: readonly SliceLayout[], d: Degrees): SeamIn
   }
   const prev = layouts[(bi - 1 + n) % n]!.index; // slice ending at this seam
   const next = layouts[bi]!.index; // slice starting at this seam
-  return { dist: deg(best), between: [prev, next] };
+  const seam = normalizeDeg(deg((layouts[bi]!.startTurn as number) * 360));
+  return { dist: deg(best), between: [prev, next], seam };
 }

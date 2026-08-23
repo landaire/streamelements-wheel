@@ -91,7 +91,8 @@
   --slice-bg-even: #c42d9a;
   --slice-bg-odd: #f4a6ea;
 }
-.details { position: absolute; inset: 0; pointer-events: none; }
+/* Above the rotating disc + entry labels so the hub and pointer always sit on top of the text. */
+.details { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
 .centerpiece {
   position: absolute; left: 50%; top: 50%; width: 22%; height: 22%;
   transform: translate(-50%, -50%); border-radius: 50%;
