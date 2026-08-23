@@ -31,4 +31,9 @@ describe("parseConfig", () => {
     expect(r.kind).toBe("error");
     if (r.kind === "error") expect(r.errors.some((e) => e.kind === "missing-field")).toBe(true);
   });
+  it("errors when sliceEntries is a non-string", () => {
+    const r = parseConfig({ sliceEntries: 5 });
+    expect(r.kind).toBe("error");
+    if (r.kind === "error") expect(r.errors.some((e) => e.kind === "bad-field-type")).toBe(true);
+  });
 });

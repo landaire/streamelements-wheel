@@ -1,7 +1,8 @@
 export type ConfigError =
   | { kind: "empty-slice-list" }
   | { kind: "bad-weight"; entry: string; raw: string }
-  | { kind: "missing-field"; key: string };
+  | { kind: "missing-field"; key: string }
+  | { kind: "bad-field-type"; key: string };
 
 export type Parsed<T> =
   | { kind: "ok"; value: T }

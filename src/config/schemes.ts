@@ -11,7 +11,7 @@ export function resolveScheme(fieldData: FieldData): ColorScheme {
   if (raw !== "custom") return { kind: "named", name: raw };
   const vars: Record<string, string> = {};
   for (const [k, v] of Object.entries(fieldData)) {
-    if (k.startsWith("color") && typeof v === "string" && v.length > 0) {
+    if (k.startsWith("color") && k !== "colorScheme" && typeof v === "string" && v.length > 0) {
       vars["--" + k] = v;
     }
   }

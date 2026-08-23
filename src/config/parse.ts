@@ -33,21 +33,23 @@ const opt = (v: unknown): string | undefined => (typeof v === "string" && v.leng
 
 export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
   const errors: ConfigError[] = [];
+  let slices: Slice[] = [];
 
   if (fieldData.sliceEntries === undefined) {
     errors.push({ kind: "missing-field", key: "sliceEntries" });
-  }
-  let slices: Slice[] = [];
-  if (typeof fieldData.sliceEntries === "string") {
+  } else if (typeof fieldData.sliceEntries === "string") {
     const parsed = parseSliceList(fieldData.sliceEntries);
     if (parsed.kind === "error") errors.push(...parsed.errors);
     else slices = parsed.value;
+  } else {
+    errors.push({ kind: "bad-field-type", key: "sliceEntries" });
   }
 
   if (errors.length > 0) return { kind: "error", errors };
 
   const style: WheelStyle = fieldData.wheelStyle === "fullwheel" ? "fullwheel" : "halfwheel";
 
+  // Defaults mirror the widget's fields.json schema defaults (each field's declared value).
   return {
     kind: "ok",
     value: {
@@ -59,8 +61,8 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       countdownSec: num(fieldData.countdownTime, 3),
       countdownText: str(fieldData.countdownText, "Spinning in... {countdown}"),
       spinningText: str(fieldData.spinningText, "Spinning"),
-      magnetism: bool(fieldData.magnetism, false), // schema default: raw landing
-      seamBandDeg: deg(num(fieldData.seamBand, 3)), // schema default: 3 deg half-band
+      magnetism: bool(fieldData.magnetism, false),
+      seamBandDeg: deg(num(fieldData.seamBand, 3)),
       respinText: str(fieldData.respinText, "On the line -- spin again"),
       scheme: resolveScheme(fieldData),
       centerIcon: str(fieldData.centerIcon, "heart"),
