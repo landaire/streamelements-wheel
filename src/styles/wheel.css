@@ -1,0 +1,41 @@
+.wheel-container {
+  position: relative;
+  width: calc(500px * var(--scale, 1));
+  height: calc(500px * var(--scale, 1));
+}
+.wheel {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform: rotate(var(--spin-degree, 0deg));
+}
+.slice {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  transform: rotate(calc(var(--slice-start) - 90deg));
+  -webkit-mask: conic-gradient(from 0deg, #000 0 var(--slice-size), transparent var(--slice-size) 360deg);
+  mask: conic-gradient(from 0deg, #000 0 var(--slice-size), transparent var(--slice-size) 360deg);
+  background: var(--slice-bg, #ccc);
+}
+.entry {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  transform: rotate(calc(var(--entry-mid-deg) - 90deg));
+  pointer-events: none;
+}
+.entry-text {
+  margin-top: 12%;
+  max-width: 34%;
+  text-align: center;
+  color: var(--entry-color, #fff);
+  font-size: var(--entry-font-size, 15px);
+  transform: rotate(90deg);
+}
+:root {
+  --slice-bg-even: #f8acba;
+  --slice-bg-odd: #ffc2ce;
+}
