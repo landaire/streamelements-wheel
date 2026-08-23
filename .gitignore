@@ -11,3 +11,6 @@ docs/superpowers/
 node_modules/
 dist/
 *.log
+
+# fields.json is generated into dist/; ignore a stray root copy
+/fields.json

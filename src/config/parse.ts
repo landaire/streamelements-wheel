@@ -3,6 +3,7 @@ import type { ConfigError, Parsed } from "./errors.js";
 import { deg, type Degrees } from "../model/units.js";
 import type { FieldData } from "../se/types.js";
 import { resolveScheme, type ColorScheme } from "./schemes.js";
+import { FIELD_DEFAULTS } from "./fields.js";
 
 export type WheelStyle = "halfwheel" | "fullwheel";
 
@@ -49,26 +50,27 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
 
   const style: WheelStyle = fieldData.wheelStyle === "fullwheel" ? "fullwheel" : "halfwheel";
 
-  // Defaults mirror the widget's fields.json schema defaults (each field's declared value).
+  // Defaults sourced from FIELD_DEFAULTS (src/config/fields.ts), the single source of
+  // truth also used to generate the widget's fields.json schema.
   return {
     kind: "ok",
     value: {
-      scale: num(fieldData.scaleWidget, 1),
+      scale: num(fieldData.scaleWidget, FIELD_DEFAULTS.scaleWidget as number),
       style,
-      title: str(fieldData.wheelTitle, ""),
+      title: str(fieldData.wheelTitle, FIELD_DEFAULTS.wheelTitle as string),
       slices,
-      spinDurationSec: num(fieldData.spinDuration, 5),
-      countdownSec: num(fieldData.countdownTime, 3),
-      countdownText: str(fieldData.countdownText, "Spinning in... {countdown}"),
-      spinningText: str(fieldData.spinningText, "Spinning"),
-      magnetism: bool(fieldData.magnetism, false),
-      seamBandDeg: deg(num(fieldData.seamBand, 3)),
-      respinText: str(fieldData.respinText, "On the line -- spin again"),
+      spinDurationSec: num(fieldData.spinDuration, FIELD_DEFAULTS.spinDuration as number),
+      countdownSec: num(fieldData.countdownTime, FIELD_DEFAULTS.countdownTime as number),
+      countdownText: str(fieldData.countdownText, FIELD_DEFAULTS.countdownText as string),
+      spinningText: str(fieldData.spinningText, FIELD_DEFAULTS.spinningText as string),
+      magnetism: bool(fieldData.magnetism, FIELD_DEFAULTS.magnetism as boolean),
+      seamBandDeg: deg(num(fieldData.seamBand, FIELD_DEFAULTS.seamBand as number)),
+      respinText: str(fieldData.respinText, FIELD_DEFAULTS.respinText as string),
       scheme: resolveScheme(fieldData),
-      centerIcon: str(fieldData.centerIcon, "heart"),
+      centerIcon: str(fieldData.centerIcon, FIELD_DEFAULTS.centerIcon as string),
       winSound: opt(fieldData.soundWin),
       tickSound: opt(fieldData.soundTick),
-      disableConfetti: bool(fieldData.disableConfetti, false),
+      disableConfetti: bool(fieldData.disableConfetti, FIELD_DEFAULTS.disableConfetti as boolean),
     },
   };
 }

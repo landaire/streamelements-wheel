@@ -1,19 +1,24 @@
 import { describe, it, expect } from "vitest";
-import { readFileSync } from "node:fs";
+import { buildFieldsSchema, FIELD_DEFS } from "../src/config/fields.js";
 import { parseConfig } from "../src/config/parse.js";
+import type { FieldData } from "../src/se/types.js";
 
-describe("fields.json", () => {
-  const fields = JSON.parse(readFileSync("fields.json", "utf8")) as Record<string, { type: string; value?: unknown }>;
+describe("fields schema", () => {
+  const schema = buildFieldsSchema();
 
-  it("every parsed key has a field (or is a documented sub-key)", () => {
+  it("covers every key parseConfig reads", () => {
     const required = ["sliceEntries", "wheelStyle", "wheelTitle", "spinDuration", "countdownTime", "countdownText", "spinningText", "magnetism", "seamBand", "respinText", "colorScheme", "centerIcon", "scaleWidget", "soundWin", "soundTick", "disableConfetti"];
-    for (const key of required) expect(fields[key], `missing field: ${key}`).toBeDefined();
+    for (const key of required) expect(schema[key], `missing field: ${key}`).toBeDefined();
   });
 
   it("field defaults parse into a valid config", () => {
-    const fd: Record<string, unknown> = {};
-    for (const [k, def] of Object.entries(fields)) if ("value" in def) fd[k] = def.value;
-    const r = parseConfig(fd as any);
+    const fd: FieldData = {};
+    for (const f of FIELD_DEFS) fd[f.key] = f.value;
+    const r = parseConfig(fd);
     expect(r.kind).toBe("ok");
+  });
+
+  it("FIELD_DEFAULTS matches each def value", () => {
+    for (const f of FIELD_DEFS) expect(schema[f.key]).toMatchObject({ value: f.value });
   });
 });

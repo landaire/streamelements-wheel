@@ -1,11 +1,13 @@
 import * as esbuild from "esbuild";
 import { execFileSync } from "node:child_process";
 import { readFileSync, mkdirSync } from "node:fs";
+import { genFields } from "./gen-fields.mjs";
 
 const watch = process.argv.includes("--watch");
 const serve = process.argv.includes("--serve");
 
 mkdirSync("dist", { recursive: true });
+await genFields();
 
 // Tailwind -> a CSS string we inline (no external stylesheet at runtime).
 function buildCss() {
