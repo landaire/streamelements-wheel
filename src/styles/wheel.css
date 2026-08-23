@@ -39,3 +39,23 @@
   --slice-bg-even: #f8acba;
   --slice-bg-odd: #ffc2ce;
 }
+.details { position: absolute; inset: 0; pointer-events: none; }
+.centerpiece {
+  position: absolute; left: 50%; top: 50%; width: 22%; height: 22%;
+  transform: translate(-50%, -50%); border-radius: 50%;
+  background: var(--centerpiece-bg, #b64e5f);
+  display: flex; align-items: center; justify-content: center;
+}
+.headpiece {
+  position: absolute; left: 50%; top: -6%; width: 6%; height: 12%;
+  transform: translateX(-50%);
+  background: var(--headpiece-bg, #fff);
+  clip-path: polygon(50% 100%, 0 0, 100% 0);
+}
+.title-wrap {
+  position: absolute; left: 50%; bottom: 4%; transform: translateX(-50%);
+  padding: 6px 14px; border-radius: 999px;
+  background: var(--plate-bg, #ffe1e7); color: var(--title-color, #b64e5f);
+  font-weight: 600; white-space: nowrap;
+}
+.set-style-halfwheel .wheel { clip-path: inset(0 0 40% 0); }
