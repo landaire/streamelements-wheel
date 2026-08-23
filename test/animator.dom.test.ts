@@ -28,12 +28,34 @@ describe("animator", () => {
     vi.useRealTimers();
   });
 
-  it("ignores a spin request while already spinning", () => {
+  it("ignores a spin request while already spinning", async () => {
+    vi.useFakeTimers();
     const dom = buildWheel(document, cfg);
     let count = 0;
     const anim = createAnimator(dom, cfg, { onResult: () => count++ }, () => 0.1);
     anim.spin();
+    anim.spin(); // second call while spinning must be a true no-op
+    await vi.advanceTimersByTimeAsync(cfg.spinDurationSec * 1000 + 100);
+    expect(count).toBe(1);
+    vi.useRealTimers();
+  });
+
+  it("persists the rotation accumulator forward across sequential spins", async () => {
+    vi.useFakeTimers();
+    const dom = buildWheel(document, cfg);
+    let count = 0;
+    const anim = createAnimator(dom, cfg, { onResult: () => count++ }, () => 0.1);
+
     anim.spin();
-    expect(anim.isSpinning()).toBe(true);
+    await vi.advanceTimersByTimeAsync(cfg.spinDurationSec * 1000 + 100);
+    const r1 = parseFloat(dom.wheel.style.getPropertyValue("--spin-degree"));
+
+    anim.spin();
+    await vi.advanceTimersByTimeAsync(cfg.spinDurationSec * 1000 + 100);
+    const r2 = parseFloat(dom.wheel.style.getPropertyValue("--spin-degree"));
+
+    expect(r2).toBeGreaterThan(r1);
+    expect(count).toBe(2);
+    vi.useRealTimers();
   });
 });

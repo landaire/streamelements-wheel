@@ -49,10 +49,12 @@ export function createAnimator(
       if (done) return;
       done = true;
       spinning = false;
+      clearTimeout(timer);
+      dom.wheel.removeEventListener("transitionend", finish);
       hooks.onResult(resolveLanding(laid, restAngle, { magnetism: cfg.magnetism, seamBandDeg: cfg.seamBandDeg }));
     };
     dom.wheel.addEventListener("transitionend", finish, { once: true });
-    setTimeout(finish, cfg.spinDurationSec * 1000 + SETTLE_GRACE_MS);
+    const timer = setTimeout(finish, cfg.spinDurationSec * 1000 + SETTLE_GRACE_MS);
   };
 
   return { spin, isSpinning: () => spinning };
