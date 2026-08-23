@@ -90,6 +90,11 @@
 :root {
   --slice-bg-even: #ab4bb8;
   --slice-bg-odd: #d9a9e8;
+  /* Gem pointer facet stops; the scheme overrides these to match the palette. */
+  --gem-light: #d9b6f2;
+  --gem-mid: #a259d9;
+  --gem-dark: #6d2fa0;
+  --gem-edge: #4a1f73;
 }
 /* Above the rotating disc + entry labels so the hub and pointer always sit on top of the text. */
 .details { position: absolute; inset: 0; pointer-events: none; z-index: 3; }

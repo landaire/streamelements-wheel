@@ -137,30 +137,57 @@ export function derivePalette(primaryHex: string, secondaryHex?: string): Record
   };
 }
 
+// The faceted gem pointer's light/mid/dark/edge stops, derived from a single base color
+// so it reads as one jewel in any hue.
+function gemStops(baseHex: string): Record<string, string> {
+  const h = hexToHsl(baseHex) ?? { h: 270, s: 0.6, l: 0.6 };
+  return {
+    "--gem-light": hslToHex({ h: h.h, s: Math.min(0.75, h.s), l: Math.min(0.9, h.l + 0.22) }),
+    "--gem-mid": hslToHex({ h: h.h, s: Math.min(0.75, h.s), l: clamp01(h.l) }),
+    "--gem-dark": hslToHex({ h: h.h, s: Math.min(0.82, h.s + 0.05), l: Math.max(0.28, h.l - 0.24) }),
+    "--gem-edge": hslToHex({ h: h.h, s: Math.min(0.88, h.s + 0.1), l: Math.max(0.16, h.l - 0.38) }),
+  };
+}
+
+// The gem's base color when it should match the scheme: the main slice hue at a vivid,
+// slightly-light tone so the jewel reads clearly above the rim.
+function gemBaseFromPalette(vars: Record<string, string>): string {
+  const even = vars["--slice-bg-even"];
+  const hsl = (even ? hexToHsl(even) : undefined) ?? { h: 270, s: 0.6, l: 0.55 };
+  return hslToHex({ h: hsl.h, s: Math.min(0.72, Math.max(0.5, hsl.s)), l: 0.6 });
+}
+
 export function resolveScheme(fieldData: FieldData): ColorScheme {
   const raw = typeof fieldData.colorScheme === "string" ? fieldData.colorScheme : DEFAULT_SCHEME;
 
-  // Simple default: derive the whole palette from one or two main colors.
+  let result: ColorScheme;
   if (raw === "auto") {
-    const primary = typeof fieldData.colorPrimary === "string" && fieldData.colorPrimary.length > 0
-      ? fieldData.colorPrimary
-      : (FIELD_DEFAULTS.colorPrimary as string);
+    // Simple default: derive the whole palette from one or two main colors.
+    const primary =
+      typeof fieldData.colorPrimary === "string" && fieldData.colorPrimary.length > 0
+        ? fieldData.colorPrimary
+        : (FIELD_DEFAULTS.colorPrimary as string);
     const secondaryRaw = typeof fieldData.colorSecondary === "string" ? fieldData.colorSecondary : "";
     const secondary = secondaryRaw.length > 0 ? secondaryRaw : undefined;
-    return { kind: "named", name: "auto", vars: derivePalette(primary, secondary) };
-  }
-
-  if (raw !== "custom") {
+    result = { kind: "named", name: "auto", vars: derivePalette(primary, secondary) };
+  } else if (raw !== "custom") {
     // Unknown named preset falls back to the default palette so the wheel is never uncolored.
-    const vars = SCHEME_VARS[raw] ?? SCHEME_VARS.grape ?? {};
-    return { kind: "named", name: raw, vars };
+    result = { kind: "named", name: raw, vars: { ...(SCHEME_VARS[raw] ?? SCHEME_VARS.grape ?? {}) } };
+  } else {
+    // Advanced: each color picker maps to a CSS var.
+    const vars: Record<string, string> = {};
+    for (const [key, cssVar] of Object.entries(CUSTOM_VAR_MAP)) {
+      const v = fieldData[key];
+      if (typeof v === "string" && v.length > 0) vars[cssVar] = v;
+    }
+    result = { kind: "custom", vars };
   }
 
-  // Advanced: each color picker maps to a CSS var.
-  const vars: Record<string, string> = {};
-  for (const [key, cssVar] of Object.entries(CUSTOM_VAR_MAP)) {
-    const v = fieldData[key];
-    if (typeof v === "string" && v.length > 0) vars[cssVar] = v;
-  }
-  return { kind: "custom", vars };
+  // Gem pointer: matches the scheme by default; a set colorGem overrides it when the
+  // "gem matches scheme" toggle is off.
+  const gemMatches = fieldData.gemMatchScheme !== false;
+  const colorGem = typeof fieldData.colorGem === "string" ? fieldData.colorGem : "";
+  const gemBase = !gemMatches && /^#[0-9a-fA-F]{3,6}$/.test(colorGem) ? colorGem : gemBaseFromPalette(result.vars);
+  Object.assign(result.vars, gemStops(gemBase));
+  return result;
 }

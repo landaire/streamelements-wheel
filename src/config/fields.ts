@@ -48,6 +48,8 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "colorPrimary", type: "colorpicker", label: "Main color", value: "#8a4bd8", group: "Colors", hint: "Auto mode: drives the darker slices, border, rim, hub, and title." },
   { key: "colorSecondary", type: "colorpicker", label: "Secondary color", value: "#c9a8f0", group: "Colors", hint: "Auto mode: drives the lighter slices, title pill, and hub center." },
   { key: "centerIcon", type: "dropdown", label: "Center icon", value: "coin", options: { coin: "Coin", heart: "Heart", star: "Star", skull: "Skull", diamond: "Diamond" }, group: "Colors" },
+  { key: "gemMatchScheme", type: "checkbox", label: "Gem matches color scheme", value: true, group: "Colors", hint: "The pointer gem derives its color from the palette. Uncheck to set a custom gem color." },
+  { key: "colorGem", type: "colorpicker", label: "Gem color", value: "#8a4bd8", group: "Colors", hint: "Applies when 'Gem matches color scheme' is off." },
   { key: "colorSliceEven", type: "colorpicker", label: "Slice color A (darker)", value: "#ab4bb8", group: "Colors", hint: "Color pickers apply when Color scheme = Custom." },
   { key: "colorSliceOdd", type: "colorpicker", label: "Slice color B (lighter)", value: "#d9a9e8", group: "Colors" },
   { key: "colorSliceBorder", type: "colorpicker", label: "Slice border", value: "#8a3a97", group: "Colors" },

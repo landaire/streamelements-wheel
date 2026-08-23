@@ -180,25 +180,30 @@ function buildCurvedText(doc: Document, text: string): SVGElement {
   return svg;
 }
 
-// A faceted lime-green plumbob for the fixed pointer: a gold bezel setting at the
-// mount, a crown of bright-to-mid green facets, a specular highlight facet, a darker
-// pavilion tapering to the tip that touches the rim, and a soft white halo behind the
-// whole gem. Gradient/filter ids are per-call so multiple mounted widgets never share
-// (and fight over) the same SVG def id.
+// A faceted plumbob gem for the fixed pointer: a bezel setting at the mount, a crown of
+// bright-to-mid facets, a specular highlight facet, a darker pavilion tapering to the tip
+// that touches the rim, and a soft white halo behind the whole gem. Every facet colors
+// from the scheme's --gem-* vars so the jewel matches the palette (or a chosen gem color).
+// Gradient/filter ids are per-call so multiple mounted widgets never share (and fight
+// over) the same SVG def id.
 function buildEmeraldPointer(doc: Document): SVGElement {
   const uid = Math.random().toString(36).slice(2);
   const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
   svg.setAttribute("viewBox", "0 0 100 140");
   svg.setAttribute("class", "headpiece-gem");
 
+  const L = "var(--gem-light)";
+  const M = "var(--gem-mid)";
+  const D = "var(--gem-dark)";
+  const E = "var(--gem-edge)";
   const defs = doc.createElementNS(SVG_NS, "defs");
   const gradients: [string, [string, string][]][] = [
-    ["bezel-" + uid, [["0%", "#eaffcf"], ["100%", "#9fe85a"]]], // top facet, kept green to match the reference plumbob (no gold cap)
-    ["table-" + uid, [["0%", "#f3ffd9"], ["100%", "#b7f36a"]]],
-    ["crown-l-" + uid, [["0%", "#b7f36a"], ["100%", "#5fbf3f"]]],
-    ["crown-r-" + uid, [["0%", "#9fe85a"], ["100%", "#4a9f34"]]],
-    ["pav-l-" + uid, [["0%", "#5fbf3f"], ["100%", "#2f7d28"]]],
-    ["pav-r-" + uid, [["0%", "#4a9f34"], ["100%", "#1f5c1c"]]],
+    ["bezel-" + uid, [["0%", L], ["100%", M]]],
+    ["table-" + uid, [["0%", L], ["100%", M]]],
+    ["crown-l-" + uid, [["0%", L], ["100%", M]]],
+    ["crown-r-" + uid, [["0%", M], ["100%", D]]],
+    ["pav-l-" + uid, [["0%", M], ["100%", D]]],
+    ["pav-r-" + uid, [["0%", D], ["100%", E]]],
   ];
   for (const [id, stops] of gradients) {
     const grad = doc.createElementNS(SVG_NS, "linearGradient");
@@ -210,7 +215,9 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     for (const [offset, color] of stops) {
       const stop = doc.createElementNS(SVG_NS, "stop");
       stop.setAttribute("offset", offset);
-      stop.setAttribute("stop-color", color);
+      // var()-based stop colors resolve only through the CSS style property, not the
+      // presentation attribute.
+      stop.style.setProperty("stop-color", color);
       grad.appendChild(stop);
     }
     defs.appendChild(grad);
@@ -244,7 +251,7 @@ function buildEmeraldPointer(doc: Document): SVGElement {
   poly(silhouette, "#ffffff", { filter: `url(#glow-${uid})`, transform: "translate(50 60) scale(1.28) translate(-50 -60)" });
   poly(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.1) translate(-50 -60)" });
 
-  // Gold bezel where the gem mounts to the rim edge.
+  // Bezel where the gem mounts to the rim edge.
   poly("30,0 70,0 76,20 24,20", `url(#bezel-${uid})`);
   // Pavilion (lower, shaded facets) drawn first so the crown's girdle overlaps it cleanly.
   poly("6,56 50,74 50,138", `url(#pav-l-${uid})`);
@@ -270,7 +277,7 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     const line = doc.createElementNS(SVG_NS, "polyline");
     line.setAttribute("points", d);
     line.setAttribute("fill", "none");
-    line.setAttribute("stroke", "#1f5c1c");
+    line.style.setProperty("stroke", "var(--gem-edge)");
     line.setAttribute("stroke-width", "0.8");
     line.setAttribute("stroke-opacity", "0.55");
     line.setAttribute("stroke-linejoin", "round");

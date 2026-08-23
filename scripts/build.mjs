@@ -459,8 +459,12 @@ function demoHtml() {
     var customKeys = ["colorSliceEven", "colorSliceOdd", "colorSliceBorder", "colorRim", "colorHub", "colorHubInner", "colorPlate", "colorTitle", "colorEntry"];
     autoKeys.forEach(function (k) { if (controls[k]) controls[k].row.style.display = scheme === "auto" ? "" : "none"; });
     customKeys.forEach(function (k) { if (controls[k]) controls[k].row.style.display = scheme === "custom" ? "" : "none"; });
+    // Gem color picker applies only when the gem is not matching the scheme.
+    var gemMatch = controls.gemMatchScheme ? controls.gemMatchScheme.el.checked : true;
+    if (controls.colorGem) controls.colorGem.row.style.display = gemMatch ? "none" : "";
   }
   if (controls.colorScheme) controls.colorScheme.el.addEventListener("change", syncColorVisibility);
+  if (controls.gemMatchScheme) controls.gemMatchScheme.el.addEventListener("change", syncColorVisibility);
   syncColorVisibility();
 
   var editorGroupBody = groupBody("Wheel Editor");

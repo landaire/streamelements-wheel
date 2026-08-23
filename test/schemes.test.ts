@@ -29,6 +29,32 @@ describe("resolveScheme", () => {
     }
   });
 
+  it("gem matches the scheme by default (derives gem vars in the primary hue)", () => {
+    const r = resolveScheme({ colorScheme: "auto", colorPrimary: "#ff0000" });
+    for (const key of ["--gem-light", "--gem-mid", "--gem-dark", "--gem-edge"]) {
+      expect(r.vars[key]).toMatch(/^#[0-9a-f]{6}$/);
+    }
+    // red primary -> red-dominant gem mid
+    const mid = r.vars["--gem-mid"]!;
+    expect(parseInt(mid.slice(1, 3), 16)).toBeGreaterThan(parseInt(mid.slice(3, 5), 16));
+    expect(parseInt(mid.slice(1, 3), 16)).toBeGreaterThan(parseInt(mid.slice(5, 7), 16));
+  });
+
+  it("a set colorGem overrides the gem when 'gem matches scheme' is off", () => {
+    const r = resolveScheme({ colorScheme: "auto", colorPrimary: "#8a4bd8", gemMatchScheme: false, colorGem: "#00cc00" });
+    // green gem base -> green-dominant mid, independent of the purple palette
+    const mid = r.vars["--gem-mid"]!;
+    const gg = parseInt(mid.slice(3, 5), 16);
+    expect(gg).toBeGreaterThan(parseInt(mid.slice(1, 3), 16));
+    expect(gg).toBeGreaterThan(parseInt(mid.slice(5, 7), 16));
+  });
+
+  it("gemMatchScheme off but no colorGem still matches the scheme", () => {
+    const r = resolveScheme({ colorScheme: "auto", colorPrimary: "#ff0000", gemMatchScheme: false, colorGem: "" });
+    const mid = r.vars["--gem-mid"]!;
+    expect(parseInt(mid.slice(1, 3), 16)).toBeGreaterThan(parseInt(mid.slice(3, 5), 16));
+  });
+
   it("named preset (grape) still carries its fixed palette vars", () => {
     const r = resolveScheme({ colorScheme: "grape" });
     expect(r.kind).toBe("named");
