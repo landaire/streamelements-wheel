@@ -8,6 +8,16 @@ export type ColorScheme =
 // Each named scheme is a set of the CSS custom properties the render reads. app.ts
 // applies scheme.vars onto the widget container, so a named scheme actually recolors.
 const SCHEME_VARS: Readonly<Record<string, Record<string, string>>> = {
+  grape: {
+    "--slice-bg-even": "#ab4bb8",
+    "--slice-bg-odd": "#d9a9e8",
+    "--slice-border": "#8a3a97",
+    "--centerpiece-bg": "#6f2f80",
+    "--plate-bg": "#e8c9f2",
+    "--title-color": "#6f2f80",
+    "--entry-color": "#ffffff",
+    "--rim-color": "#6f2f80",
+  },
   fuchsia: {
     "--slice-bg-even": "#c42d9a",
     "--slice-bg-odd": "#f4a6ea",
@@ -16,6 +26,7 @@ const SCHEME_VARS: Readonly<Record<string, Record<string, string>>> = {
     "--plate-bg": "#ffdaf6",
     "--title-color": "#8a1a6d",
     "--entry-color": "#ffffff",
+    "--rim-color": "#7a1560",
   },
   "sweetheart-original": {
     "--slice-bg-even": "#f8acba",
@@ -25,6 +36,7 @@ const SCHEME_VARS: Readonly<Record<string, Record<string, string>>> = {
     "--plate-bg": "#ffe1e7",
     "--title-color": "#b64e5f",
     "--entry-color": "#ffffff",
+    "--rim-color": "#8a3a48",
   },
 };
 

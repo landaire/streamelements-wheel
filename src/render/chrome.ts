@@ -24,6 +24,34 @@ const ICON_GLYPHS: Readonly<Record<string, string>> = {
   diamond: "M4 9l4-6h8l4 6-10 12L4 9z",
 };
 
+// Coin center icon: a hexagon outline with a "$" glyph, drawn in currentColor (the
+// deep-purple hub text color set by .cb-coin) on the light inner disc.
+function buildCoinIcon(doc: Document): SVGElement {
+  const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("class", "hub-icon-svg");
+
+  const hex = doc.createElementNS(SVG_NS, "polygon");
+  hex.setAttribute("points", "21,12 16.5,19.79 7.5,19.79 3,12 7.5,4.21 16.5,4.21");
+  hex.setAttribute("fill", "none");
+  hex.setAttribute("stroke", "currentColor");
+  hex.setAttribute("stroke-width", "1.6");
+  hex.setAttribute("stroke-linejoin", "round");
+  svg.appendChild(hex);
+
+  const text = doc.createElementNS(SVG_NS, "text");
+  text.setAttribute("x", "12");
+  text.setAttribute("y", "16.3");
+  text.setAttribute("text-anchor", "middle");
+  text.setAttribute("font-size", "11");
+  text.setAttribute("font-weight", "700");
+  text.setAttribute("fill", "currentColor");
+  text.textContent = "$";
+  svg.appendChild(text);
+
+  return svg;
+}
+
 function buildIconGlyph(doc: Document, icon: string): SVGElement | undefined {
   const d = ICON_GLYPHS[icon];
   if (!d) return undefined;
@@ -152,10 +180,11 @@ function buildCurvedText(doc: Document, text: string): SVGElement {
   return svg;
 }
 
-// A faceted emerald gem for the fixed pointer: a gold bezel setting at the mount, a
-// crown of light-to-mid green facets, a bright specular highlight facet, and a darker
-// pavilion tapering to the tip that touches the rim. Gradient ids are per-call so
-// multiple mounted widgets never share (and fight over) the same SVG def id.
+// A faceted lime-green plumbob for the fixed pointer: a gold bezel setting at the
+// mount, a crown of bright-to-mid green facets, a specular highlight facet, a darker
+// pavilion tapering to the tip that touches the rim, and a soft white halo behind the
+// whole gem. Gradient/filter ids are per-call so multiple mounted widgets never share
+// (and fight over) the same SVG def id.
 function buildEmeraldPointer(doc: Document): SVGElement {
   const uid = Math.random().toString(36).slice(2);
   const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
@@ -165,11 +194,11 @@ function buildEmeraldPointer(doc: Document): SVGElement {
   const defs = doc.createElementNS(SVG_NS, "defs");
   const gradients: [string, [string, string][]][] = [
     ["bezel-" + uid, [["0%", "#f7e08a"], ["45%", "#c9962f"], ["100%", "#7a5716"]]],
-    ["table-" + uid, [["0%", "#eafff0"], ["100%", "#57c98a"]]],
-    ["crown-l-" + uid, [["0%", "#bdf7cf"], ["100%", "#1f8a54"]]],
-    ["crown-r-" + uid, [["0%", "#8fe8ae"], ["100%", "#146339"]]],
-    ["pav-l-" + uid, [["0%", "#2f9c62"], ["100%", "#0f5132"]]],
-    ["pav-r-" + uid, [["0%", "#1c7042"], ["100%", "#08301d"]]],
+    ["table-" + uid, [["0%", "#f3ffd9"], ["100%", "#b7f36a"]]],
+    ["crown-l-" + uid, [["0%", "#b7f36a"], ["100%", "#5fbf3f"]]],
+    ["crown-r-" + uid, [["0%", "#9fe85a"], ["100%", "#4a9f34"]]],
+    ["pav-l-" + uid, [["0%", "#5fbf3f"], ["100%", "#2f7d28"]]],
+    ["pav-r-" + uid, [["0%", "#4a9f34"], ["100%", "#1f5c1c"]]],
   ];
   for (const [id, stops] of gradients) {
     const grad = doc.createElementNS(SVG_NS, "linearGradient");
@@ -186,6 +215,18 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     }
     defs.appendChild(grad);
   }
+  // Soft blur for the white halo behind the gem; a generous filter region so the
+  // blur is not clipped at the element's own bounding box.
+  const glowFilter = doc.createElementNS(SVG_NS, "filter");
+  glowFilter.setAttribute("id", "glow-" + uid);
+  glowFilter.setAttribute("x", "-60%");
+  glowFilter.setAttribute("y", "-60%");
+  glowFilter.setAttribute("width", "220%");
+  glowFilter.setAttribute("height", "220%");
+  const blur = doc.createElementNS(SVG_NS, "feGaussianBlur");
+  blur.setAttribute("stdDeviation", "6");
+  glowFilter.appendChild(blur);
+  defs.appendChild(glowFilter);
   svg.appendChild(defs);
 
   const poly = (points: string, fill: string, extra?: Record<string, string>): void => {
@@ -195,6 +236,13 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     if (extra) for (const [k, v] of Object.entries(extra)) p.setAttribute(k, v);
     svg.appendChild(p);
   };
+
+  // Overall gem silhouette (bezel top through the tip), used for the white halo below.
+  const silhouette = "30,0 70,0 76,20 94,56 50,138 6,56 24,20";
+  // Blurred, slightly larger white copy of the silhouette sits behind everything as a
+  // soft glow; a crisp unblurred copy on top of it gives a clean white outline edge.
+  poly(silhouette, "#ffffff", { filter: `url(#glow-${uid})`, transform: "translate(50 60) scale(1.28) translate(-50 -60)" });
+  poly(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.1) translate(-50 -60)" });
 
   // Gold bezel where the gem mounts to the rim edge.
   poly("30,0 70,0 76,20 24,20", `url(#bezel-${uid})`);
@@ -222,7 +270,7 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     const line = doc.createElementNS(SVG_NS, "polyline");
     line.setAttribute("points", d);
     line.setAttribute("fill", "none");
-    line.setAttribute("stroke", "#0a3d24");
+    line.setAttribute("stroke", "#1f5c1c");
     line.setAttribute("stroke-width", "0.8");
     line.setAttribute("stroke-opacity", "0.55");
     line.setAttribute("stroke-linejoin", "round");
@@ -253,7 +301,7 @@ function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): vo
     return;
   }
   const icon = el(doc, "center-icon cb-" + cfg.centerIcon);
-  const glyph = buildIconGlyph(doc, cfg.centerIcon);
+  const glyph = cfg.centerIcon === "coin" ? buildCoinIcon(doc) : buildIconGlyph(doc, cfg.centerIcon);
   if (glyph) icon.appendChild(glyph);
   centerpiece.appendChild(icon);
 }

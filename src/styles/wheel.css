@@ -43,12 +43,13 @@
 }
 /* Fixed top-left light source: these overlays are siblings of .wheel, not children,
    so they never rotate with the disc. */
+/* Flat slices: only a faint depth cue remains, not a glossy sphere. */
 .wheel-sheen {
   position: absolute;
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.14) 100%);
+  background: radial-gradient(circle at 50% 40%, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 55%, rgba(0, 0, 0, 0.05) 100%);
   mix-blend-mode: soft-light;
 }
 .wheel-highlight {
@@ -56,18 +57,17 @@
   inset: 0;
   border-radius: 50%;
   pointer-events: none;
-  background: radial-gradient(circle at 27% 22%, rgba(255, 255, 255, 0.28), rgba(255, 255, 255, 0) 42%);
+  background: radial-gradient(circle at 27% 22%, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0) 42%);
 }
-.wheel-rim {
+/* Thick solid rim band, drawn in the 0..500 viewBox so its thickness scales with the
+   disc regardless of --scale; overlaps the outer edge of the slice fill like a bezel. */
+.wheel-rim-svg {
   position: absolute;
   inset: 0;
-  border-radius: 50%;
+  width: 100%;
+  height: 100%;
+  display: block;
   pointer-events: none;
-  box-shadow:
-    0 0 0 3px rgba(255, 255, 255, 0.3) inset,
-    0 0 0 7px rgba(140, 80, 55, 0.35) inset,
-    0 0 0 10px rgba(255, 255, 255, 0.12) inset,
-    0 3px 8px rgba(0, 0, 0, 0.35);
 }
 .entry {
   position: absolute;
@@ -88,22 +88,23 @@
   transform: rotate(90deg);
 }
 :root {
-  --slice-bg-even: #c42d9a;
-  --slice-bg-odd: #f4a6ea;
+  --slice-bg-even: #ab4bb8;
+  --slice-bg-odd: #d9a9e8;
 }
 /* Above the rotating disc + entry labels so the hub and pointer always sit on top of the text. */
 .details { position: absolute; inset: 0; pointer-events: none; z-index: 3; }
+/* Flat concentric rings (outer deep-purple, mid lavender, inner light-pink coin bed)
+   instead of a glossy 3D sphere. Ring stops are hard-edged percentages of the hub. */
 .centerpiece {
   position: absolute; left: 50%; top: 50%; width: 22%; height: 22%;
   transform: translate(-50%, -50%); border-radius: 50%;
-  background:
-    radial-gradient(circle at 35% 25%, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 42%),
-    radial-gradient(circle at 65% 82%, rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0) 55%),
-    var(--centerpiece-bg, #b64e5f);
-  box-shadow:
-    inset 0 2px 3px rgba(255, 255, 255, 0.32),
-    inset 0 -3px 5px rgba(0, 0, 0, 0.35),
-    0 3px 8px rgba(0, 0, 0, 0.45);
+  background: radial-gradient(
+    circle at 50% 50%,
+    #ffe1f0 0%, #ffe1f0 44%,
+    var(--slice-bg-odd, #d9a9e8) 44%, var(--slice-bg-odd, #d9a9e8) 72%,
+    var(--centerpiece-bg, #6f2f80) 72%, var(--centerpiece-bg, #6f2f80) 100%
+  );
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.35);
   display: flex; align-items: center; justify-content: center;
   overflow: hidden;
   color: #fff;
@@ -116,6 +117,8 @@
   justify-content: center;
 }
 .hub-icon-svg { width: 46%; height: 46%; }
+/* Coin glyph sits on the light-pink inner ring, so it reads in deep purple, not white. */
+.cb-coin { color: var(--centerpiece-bg, #6f2f80); }
 /* The image sits inset from the centerpiece edge so the knob's own bevel/rim shows
    as a ring around it, and a gloss layer on top keeps the glossy-button look. */
 .hub-image-wrap {
@@ -162,7 +165,7 @@
   transform: translateX(-50%);
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.55));
 }
-.headpiece-gem { width: 100%; height: 100%; display: block; }
+.headpiece-gem { width: 100%; height: 100%; display: block; overflow: visible; }
 .title-wrap {
   position: absolute; left: 50%; top: -17%; transform: translateX(-50%);
   padding: 6px 14px; border-radius: 999px;

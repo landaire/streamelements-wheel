@@ -2,13 +2,13 @@ import { describe, it, expect } from "vitest";
 import { resolveScheme } from "../src/config/schemes.js";
 
 describe("resolveScheme", () => {
-  it("default/absent colorScheme -> named fuchsia with palette vars", () => {
+  it("default/absent colorScheme -> named grape with palette vars", () => {
     const r = resolveScheme({});
     expect(r.kind).toBe("named");
     if (r.kind === "named") {
-      expect(r.name).toBe("fuchsia");
-      expect(r.vars["--slice-bg-even"]).toBe("#c42d9a");
-      expect(r.vars["--slice-bg-odd"]).toBe("#f4a6ea");
+      expect(r.name).toBe("grape");
+      expect(r.vars["--slice-bg-even"]).toBe("#ab4bb8");
+      expect(r.vars["--slice-bg-odd"]).toBe("#d9a9e8");
     }
   });
 

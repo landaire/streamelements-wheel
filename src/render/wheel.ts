@@ -14,6 +14,10 @@ const SVG_NS = "http://www.w3.org/2000/svg";
 const CX = 250;
 const CY = 250;
 const R = 244;
+// Rim band thickness, ~7% of R; drawn as a stroked circle so it scales with the
+// viewBox (and therefore with --scale) instead of a fixed-px CSS box-shadow.
+const RIM_THICKNESS = 18;
+const RIM_CENTER_R = 250 - RIM_THICKNESS / 2;
 
 function el(doc: Document, cls: string): HTMLElement {
   const e = doc.createElement("div");
@@ -50,15 +54,36 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
   const entryWrap = el(doc, "entry-wrap");
   wheel.appendChild(entryWrap);
 
-  // Skeuomorphic overlays: siblings of .wheel (not children), so they never rotate.
+  // Overlays: siblings of .wheel (not children), so they never rotate.
   const sheen = el(doc, "wheel-sheen");
   const highlight = el(doc, "wheel-highlight");
-  const rim = el(doc, "wheel-rim");
+
+  // Thick rim band + a slightly darker inner edge line, overlapping the outer edge
+  // of the slice fill like a bezel.
+  const rimSvg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
+  rimSvg.setAttribute("viewBox", "0 0 500 500");
+  rimSvg.setAttribute("class", "wheel-rim-svg");
+  const rimBand = doc.createElementNS(SVG_NS, "circle");
+  rimBand.setAttribute("cx", String(CX));
+  rimBand.setAttribute("cy", String(CY));
+  rimBand.setAttribute("r", String(RIM_CENTER_R));
+  rimBand.setAttribute("fill", "none");
+  rimBand.style.stroke = "var(--rim-color, #6f2f80)";
+  rimBand.style.strokeWidth = String(RIM_THICKNESS);
+  rimSvg.appendChild(rimBand);
+  const rimInnerEdge = doc.createElementNS(SVG_NS, "circle");
+  rimInnerEdge.setAttribute("cx", String(CX));
+  rimInnerEdge.setAttribute("cy", String(CY));
+  rimInnerEdge.setAttribute("r", String(RIM_CENTER_R - RIM_THICKNESS / 2));
+  rimInnerEdge.setAttribute("fill", "none");
+  rimInnerEdge.style.stroke = "rgba(0, 0, 0, 0.35)";
+  rimInnerEdge.style.strokeWidth = "2";
+  rimSvg.appendChild(rimInnerEdge);
 
   wheelClip.appendChild(wheel);
   wheelClip.appendChild(sheen);
   wheelClip.appendChild(highlight);
-  wheelClip.appendChild(rim);
+  wheelClip.appendChild(rimSvg);
   container.appendChild(wheelClip);
 
   const laid: SliceLayout[] = layout(cfg.slices);
