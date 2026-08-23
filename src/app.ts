@@ -1,8 +1,92 @@
-// Runtime CSS injected at build time.
 declare const __INLINE_CSS__: string;
 
-export function mountStyles(doc: Document): void {
+import type { WidgetLoadDetail } from "./se/types.js";
+import type { ConfigError } from "./config/errors.js";
+import { parseConfig } from "./config/parse.js";
+import { buildWheel } from "./render/wheel.js";
+import { addChrome } from "./render/chrome.js";
+import { createAnimator } from "./spin/animator.js";
+import { createAudio, type AudioEngine } from "./audio/engine.js";
+import { createConfetti } from "./fx/confetti.js";
+import { consoleAnnounceSink } from "./se/sinks.js";
+import type { Rng } from "./model/spin.js";
+
+function mountStyles(doc: Document): void {
+  if (doc.getElementById("wheel-styles")) return;
   const style = doc.createElement("style");
-  style.textContent = __INLINE_CSS__;
+  style.id = "wheel-styles";
+  style.textContent = typeof __INLINE_CSS__ === "string" ? __INLINE_CSS__ : "";
   doc.head.appendChild(style);
 }
+
+export interface MountOpts {
+  rng?: Rng;
+  audioCtxFactory?: () => AudioContext;
+}
+
+export function mountWidget(
+  doc: Document,
+  detail: WidgetLoadDetail,
+  opts: MountOpts = {},
+): { root: HTMLElement; spin(): void } | { error: ConfigError[] } {
+  mountStyles(doc);
+  const parsed = parseConfig(detail.fieldData);
+  if (parsed.kind === "error") {
+    const panel = doc.createElement("div");
+    panel.className = "wheel-error";
+    panel.textContent = "Wheel config error: " + parsed.errors.map((e) => e.kind).join(", ");
+    doc.body.appendChild(panel);
+    return { error: parsed.errors };
+  }
+  const cfg = parsed.value;
+
+  const canvas = doc.createElement("canvas");
+  canvas.className = "confetti";
+  canvas.width = 500;
+  canvas.height = 500;
+
+  const dom = buildWheel(doc, cfg);
+  const chrome = addChrome(doc, dom, cfg);
+  dom.container.insertBefore(canvas, dom.container.firstChild);
+
+  // No AudioContext in headless/jsdom environments; fall back to a no-op engine
+  // rather than constructing an AudioContext that doesn't exist there.
+  const audioCtxFactory =
+    opts.audioCtxFactory ?? (typeof AudioContext !== "undefined" ? () => new AudioContext() : undefined);
+  const audio: AudioEngine =
+    audioCtxFactory !== undefined
+      ? createAudio(audioCtxFactory, { winSound: cfg.winSound })
+      : { tick() {}, win() {} };
+
+  const confetti = createConfetti(
+    canvas,
+    [cfg.scheme.kind === "custom" ? "#fff" : "#ffc3ce", "#f8acbb", "#ffe3c3"],
+    () => performance.now(),
+    (cb) => requestAnimationFrame(cb),
+  );
+  const announce = consoleAnnounceSink(chrome.setTitle, cfg.respinText);
+
+  const animator = createAnimator(
+    dom,
+    cfg,
+    {
+      onStart: () => chrome.setTitle(cfg.spinningText),
+      onResult: (result) => {
+        if (result.kind === "winner") {
+          const text = cfg.slices[result.slice as number]!.text;
+          announce.winner(text);
+          audio.win();
+          if (!cfg.disableConfetti) confetti.fire();
+        } else {
+          announce.seam();
+        }
+      },
+    },
+    opts.rng,
+  );
+
+  doc.body.appendChild(dom.container);
+  return { root: dom.container, spin: () => animator.spin() };
+}
+
+// Live SE path is wired in a follow-up; preview drives mountWidget directly.

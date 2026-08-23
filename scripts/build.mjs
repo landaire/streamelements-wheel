@@ -24,6 +24,7 @@ const opts = {
   outfile: "dist/wheel.js",
   target: "es2022",
   define: cssDefine(),
+  globalName: "Wheel",
 };
 
 if (serve) {
