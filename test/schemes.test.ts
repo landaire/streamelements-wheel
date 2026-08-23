@@ -2,20 +2,37 @@ import { describe, it, expect } from "vitest";
 import { resolveScheme } from "../src/config/schemes.js";
 
 describe("resolveScheme", () => {
-  it("default/absent colorScheme -> named grape with palette vars", () => {
+  it("default/absent colorScheme -> auto, palette derived from the default main colors", () => {
     const r = resolveScheme({});
     expect(r.kind).toBe("named");
     if (r.kind === "named") {
-      expect(r.name).toBe("grape");
-      expect(r.vars["--slice-bg-even"]).toBe("#ab4bb8");
-      expect(r.vars["--slice-bg-odd"]).toBe("#d9a9e8");
+      expect(r.name).toBe("auto");
+      // every derived var is a valid hex color
+      for (const key of ["--slice-bg-even", "--slice-bg-odd", "--slice-border", "--centerpiece-bg", "--rim-color", "--hub-inner", "--plate-bg", "--title-color"]) {
+        expect(r.vars[key]).toMatch(/^#[0-9a-f]{6}$/);
+      }
+      expect(r.vars["--entry-color"]).toBe("#ffffff");
     }
   });
 
-  it("named sweetheart-original carries its palette vars", () => {
-    const r = resolveScheme({ colorScheme: "sweetheart-original" });
+  it("auto derives tones from the primary hue (a red primary yields red-ish slices)", () => {
+    const r = resolveScheme({ colorScheme: "auto", colorPrimary: "#ff0000" });
     expect(r.kind).toBe("named");
-    if (r.kind === "named") expect(r.vars["--slice-bg-even"]).toBe("#f8acba");
+    if (r.kind === "named") {
+      // the darker slice keeps the primary's red hue: r channel dominates
+      const even = r.vars["--slice-bg-even"]!;
+      const rr = parseInt(even.slice(1, 3), 16);
+      const gg = parseInt(even.slice(3, 5), 16);
+      const bb = parseInt(even.slice(5, 7), 16);
+      expect(rr).toBeGreaterThan(gg);
+      expect(rr).toBeGreaterThan(bb);
+    }
+  });
+
+  it("named preset (grape) still carries its fixed palette vars", () => {
+    const r = resolveScheme({ colorScheme: "grape" });
+    expect(r.kind).toBe("named");
+    if (r.kind === "named") expect(r.vars["--slice-bg-even"]).toBe("#ab4bb8");
   });
 
   it("custom colorScheme maps color pickers to the real CSS vars", () => {
