@@ -250,7 +250,7 @@ function demoHtml() {
   #modal code { background: #ecece4; border: 1px solid #c9c9c0; padding: 0 3px; }
   #modal .fig { border: 1px solid #111; padding: 10px 12px; margin: 12px 0; }
   #modal .fig-head { display: flex; align-items: center; justify-content: space-between; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
-  #modal .code-block { margin: 0; white-space: pre-wrap; word-break: break-all; font-size: 12px; background: #ecece4; border: 1px solid #c9c9c0; padding: 8px; }
+  #modal .code-block { margin: 0; white-space: pre-wrap; word-break: break-all; font-size: 12px; background: #ecece4; border: 1px solid #c9c9c0; padding: 8px; max-height: 260px; overflow-y: auto; overscroll-behavior: contain; }
   #modal .mono-btn { font-family: inherit; font-size: 11px; background: #111; color: #fbfbf5; border: none; padding: 3px 10px; cursor: pointer; }
   #modal-close { position: absolute; top: 10px; right: 12px; background: #111; color: #fbfbf5; border: none; font-family: inherit; font-size: 12px; padding: 4px 10px; cursor: pointer; }
 </style>
