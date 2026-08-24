@@ -872,9 +872,16 @@ function demoHtml() {
     );
   }
 
-  // The one-paste StreamElements install: a config code baked into the loader boilerplate.
+  // The one-paste StreamElements install: the current config code baked into the loader
+  // boilerplate, with a comment pointing back to the playground to edit it.
   function boilerplateText(code) {
-    return '<script>\\n  window.WHEEL_CONFIG = "' + code + '";\\n<\\/script>\\n<script src="https://landaire.github.io/streamelements-wheel/wheel.js"><\\/script>';
+    var editUrl = "https://landaire.github.io/streamelements-wheel/";
+    return '<script>\\n' +
+      '  // Edit this wheel at ' + editUrl + '\\n' +
+      '  // then paste the new code between the quotes below.\\n' +
+      '  window.WHEEL_CONFIG = "' + code + '";\\n' +
+      '<\\/script>\\n' +
+      '<script src="' + editUrl + 'wheel.js"><\\/script>';
   }
 
   // Extracts the base64url code from a raw code or a full URL (anything after the last '#').
