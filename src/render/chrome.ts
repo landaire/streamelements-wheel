@@ -1,5 +1,6 @@
 import type { WheelDom } from "./wheel.js";
 import type { WheelConfig } from "../config/parse.js";
+import { trimHubImage } from "./trim.js";
 
 export interface Chrome {
   title: HTMLElement;
@@ -290,6 +291,7 @@ function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): vo
       img.style.transform = "scale(" + cfg.hubImageZoom + ")";
     }
     imgWrap.appendChild(img);
+    trimHubImage(doc, img); // crop transparent margins from any source (file, data URL, or remote URL)
     centerpiece.appendChild(imgWrap);
     centerpiece.appendChild(el(doc, "hub-image-gloss"));
     return;
