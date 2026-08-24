@@ -13,6 +13,8 @@ export interface FieldDef {
   max?: number;
   step?: number;
   hint?: string; // optional subtext shown under the control in the demo playground
+  accept?: string; // playground only: file-input accept filter; presence adds a "Choose file"
+  // button that encodes the picked file to a base64 data URL. Not serialized to fields.json.
 }
 
 export const FIELD_DEFS: readonly FieldDef[] = [
@@ -69,14 +71,14 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "colorTitle", type: "colorpicker", label: "Title text", value: "#6f2f80", group: "Colors" },
   { key: "colorEntry", type: "colorpicker", label: "Label text", value: "#ffffff", group: "Colors" },
   { key: "hubMode", type: "dropdown", label: "Hub content", value: "icon", options: { icon: "Icon", image: "Image", text: "Text" }, group: "Center Hub" },
-  { key: "hubImage", type: "text", label: "Hub image URL", value: "", group: "Center Hub", hint: "Image URL or a base64 data URL (e.g. data:image/png;base64,iVBORw0KGgo...). Shown when Hub content = Image." },
+  { key: "hubImage", type: "text", label: "Hub image URL", value: "", group: "Center Hub", accept: "image/*", hint: "Pick a file to embed it, or paste an image URL or a base64 data URL. Shown when Hub content = Image." },
   { key: "hubText", type: "text", label: "Hub text", value: "", group: "Center Hub" },
   { key: "hubTextStyle", type: "dropdown", label: "Hub text style", value: "fit", options: { fit: "Fit (block)", curve: "Curved" }, group: "Center Hub" },
   { key: "disableConfetti", type: "checkbox", label: "Disable confetti", value: false, group: "Confetti" },
   { key: "winSoundStyle", type: "dropdown", label: "Win sound style", value: "chime", options: { chime: "Chime (celebratory bells)", cash: "Cash register (cha-ching)" }, group: "Sounds", hint: "The built-in synthesized win sound to play. Ignored if a Win sound URL is set below." },
-  { key: "soundWin", type: "sound-input", label: "Win sound", value: "", group: "Sounds", hint: "Overrides the built-in win sound. Use a normal URL or a base64 data URL (e.g. data:audio/mpeg;base64,SUQzBAA...). Leave blank for the built-in." },
-  { key: "soundTick", type: "sound-input", label: "Tick sound", value: "", group: "Sounds", hint: "Overrides the built-in tick. Use a normal URL or a base64 data URL (e.g. data:audio/mpeg;base64,SUQzBAA...). Leave blank for the built-in." },
-  { key: "soundSeam", type: "sound-input", label: "On-the-line sound", value: "", group: "Sounds", hint: "Plays on a seam landing (magnetism off). Use a normal URL or a base64 data URL (e.g. data:audio/mpeg;base64,SUQzBAA...). Leave blank for the built-in." },
+  { key: "soundWin", type: "sound-input", label: "Win sound", value: "", group: "Sounds", accept: "audio/*", hint: "Overrides the built-in win sound. Pick a file to embed it, or paste a normal URL or a base64 data URL. Leave blank for the built-in." },
+  { key: "soundTick", type: "sound-input", label: "Tick sound", value: "", group: "Sounds", accept: "audio/*", hint: "Overrides the built-in tick. Pick a file to embed it, or paste a normal URL or a base64 data URL. Leave blank for the built-in." },
+  { key: "soundSeam", type: "sound-input", label: "On-the-line sound", value: "", group: "Sounds", accept: "audio/*", hint: "Plays on a seam landing (magnetism off). Pick a file to embed it, or paste a normal URL or a base64 data URL. Leave blank for the built-in." },
   { key: "disableSound", type: "checkbox", label: "Mute all sounds", value: false, group: "Sounds" },
   { key: "disableTickSound", type: "checkbox", label: "Disable tick sound", value: false, group: "Sounds" },
   { key: "enableCommands", type: "checkbox", label: "Enable chat commands", value: true, group: "Commands" },

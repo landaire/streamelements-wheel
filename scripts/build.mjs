@@ -193,6 +193,10 @@ function demoHtml() {
   .f-slider-wrap input[type="range"] { flex: 1; }
   .f-slider-val { font-family: "Courier New", Courier, monospace; font-size: 12px; color: #cfcde0; min-width: 3.5em; text-align: right; }
   .f-hint { font-size: 11px; color: #8b88a8; margin-top: 4px; line-height: 1.35; }
+  .f-file { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .f-file-btn { font-family: inherit; font-size: 12px; background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 5px; padding: 5px 12px; cursor: pointer; }
+  .f-file-btn:hover { background: #34313f; }
+  .f-file-status { font-size: 11px; color: #8b88a8; line-height: 1.35; word-break: break-word; flex: 1 1 120px; min-width: 0; }
   #share {
     display: block;
     width: 100%;
@@ -446,6 +450,51 @@ function demoHtml() {
     remountTimer = setTimeout(remountWheel, delayMs);
   }
 
+  function humanSize(chars) {
+    var kb = chars / 1024;
+    return kb >= 1024 ? (Math.round(kb / 102.4) / 10) + " MB" : Math.round(kb) + " KB";
+  }
+
+  // A "Choose file..." control that reads the picked file as a base64 data URL and drops it
+  // straight into the field, so users never hand-encode an image or sound. The encoded string
+  // rides along in the config code like any other field value.
+  function makeFilePicker(field, targetInput) {
+    var wrap = document.createElement("div");
+    wrap.className = "f-file";
+    var fileInput = document.createElement("input");
+    fileInput.type = "file";
+    fileInput.accept = field.accept;
+    fileInput.style.display = "none";
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "f-file-btn";
+    btn.textContent = "Choose file...";
+    var status = document.createElement("span");
+    status.className = "f-file-status";
+    btn.addEventListener("click", function () { fileInput.click(); });
+    fileInput.addEventListener("change", function () {
+      var file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      status.textContent = "Encoding " + file.name + "...";
+      var reader = new FileReader();
+      reader.onerror = function () { status.textContent = "Could not read that file."; };
+      reader.onload = function () {
+        var dataUrl = typeof reader.result === "string" ? reader.result : "";
+        if (!dataUrl) { status.textContent = "Could not read that file."; return; }
+        targetInput.value = dataUrl;
+        status.textContent = "Embedded " + file.name + " (" + humanSize(dataUrl.length) + ")";
+        if (dataUrl.length > 1400000) status.textContent += " -- large, your config code will be big";
+        remountWheel();
+        fileInput.value = ""; // let the same file be re-picked
+      };
+      reader.readAsDataURL(file);
+    });
+    wrap.appendChild(btn);
+    wrap.appendChild(fileInput);
+    wrap.appendChild(status);
+    return wrap;
+  }
+
   FIELD_DEFS.forEach(function (field) {
     var body = groupBody(field.group);
     var row = document.createElement("div");
@@ -542,6 +591,7 @@ function demoHtml() {
       input.value = initVal === undefined ? "" : String(initVal);
       input.addEventListener("input", function () { scheduleRemount(250); });
       row.appendChild(input);
+      if (field.accept) row.appendChild(makeFilePicker(field, input));
     }
 
     body.appendChild(row);
