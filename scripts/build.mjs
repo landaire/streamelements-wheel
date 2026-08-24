@@ -99,11 +99,11 @@ function demoHtml() {
 <html lang="en"><head><meta charset="utf-8" /><title>Spinning Wheel - Demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  :root { color-scheme: dark; --stage-left: 440px; }
+  :root { color-scheme: dark; --stage-left: 700px; }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100vh; background: #1b1b22; }
   body {
-    padding-left: 440px;
+    padding-left: 700px;
     display: grid;
     place-items: center;
     font-family: sans-serif;
@@ -113,21 +113,21 @@ function demoHtml() {
     position: fixed;
     top: 0;
     left: 0;
-    width: 440px;
+    width: 700px;
     height: 100vh;
-    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     background: rgba(24, 22, 30, 0.92);
     color: #e9e8f2;
     border-right: 1px solid rgba(255, 255, 255, 0.08);
     z-index: 20;
   }
   #panel-head {
-    position: sticky;
-    top: 0;
+    flex: 0 0 auto;
     background: rgba(24, 22, 30, 0.98);
     padding: 16px 18px 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    z-index: 1;
   }
   #panel-head h1 { font-size: 15px; margin: 0 0 10px; letter-spacing: 0.5px; }
   #spin {
@@ -145,8 +145,15 @@ function demoHtml() {
   }
   #spin:hover { background: #ffa8b8; }
   #back { display: inline-block; margin-top: 10px; color: #b8bdd6; font-family: monospace; font-size: 12px; }
-  #panel-body { padding: 6px 18px 24px; }
-  .f-group { margin-top: 18px; }
+  /* Vertical tabs: a fixed tab column on the left, one group's settings shown at a time. */
+  #panel-body { flex: 1 1 auto; display: flex; min-height: 0; }
+  #tabnav { flex: 0 0 168px; overflow-y: auto; border-right: 1px solid rgba(255, 255, 255, 0.1); padding: 8px 0; }
+  #tabpanels { flex: 1 1 auto; overflow-y: auto; min-width: 0; padding: 12px 18px 28px; }
+  .tab { display: block; width: 100%; text-align: left; background: none; border: none; border-left: 3px solid transparent; color: #b8bdd6; padding: 8px 12px; font-size: 12px; cursor: pointer; }
+  .tab:hover { background: rgba(255, 255, 255, 0.05); color: #fff; }
+  .tab.active { background: rgba(107, 75, 216, 0.18); color: #fff; border-left-color: #6b4bd8; }
+  .f-group { display: none; }
+  .f-group.active { display: block; }
   .f-group h3 {
     font-size: 11px;
     letter-spacing: 1px;
@@ -214,15 +221,6 @@ function demoHtml() {
   .ed-add-row { display: flex; gap: 8px; margin-top: 4px; }
   .ed-add-btn { flex: 1; background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 6px; padding: 8px 10px; font-size: 12px; cursor: pointer; }
   .ed-add-btn:hover { background: #35323f; }
-  /* Outline: a vertical quick-jump list (vertical tabs) to each settings group. */
-  #outline { display: flex; flex-direction: column; gap: 1px; margin-top: 10px; max-height: 40vh; overflow-y: auto; }
-  .outline-chip { display: block; width: 100%; text-align: left; background: none; color: #b8bdd6; border: none; border-left: 2px solid transparent; border-radius: 0; padding: 4px 10px; font-size: 12px; cursor: pointer; }
-  .outline-chip:hover { background: rgba(255, 255, 255, 0.06); color: #fff; border-left-color: #6b4bd8; }
-  /* Collapsible groups. */
-  .f-group h3 { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
-  .f-group h3 .chev { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; opacity: 0.7; transition: transform 0.15s; flex: none; }
-  .f-group.collapsed h3 .chev { transform: rotate(-90deg); }
-  .f-group.collapsed .f-group-body { display: none; }
   /* Share bar: config URL + code with actions. */
   #share-bar { margin-top: 12px; display: grid; gap: 5px; }
   #share-bar label { font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: #8b88a8; }
@@ -267,10 +265,12 @@ function demoHtml() {
       </div>
       <div id="share-status"></div>
     </div>
-    <div id="outline"></div>
     <button id="open-instructions" type="button">How to install in StreamElements</button>
   </div>
-  <div id="panel-body"></div>
+  <div id="panel-body">
+    <div id="tabnav"></div>
+    <div id="tabpanels"></div>
+  </div>
 </div>
 <div id="modal-overlay" class="hidden">
   <div id="modal">
@@ -378,25 +378,19 @@ function demoHtml() {
   function groupSlug(name) {
     return "group-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
   }
+  var tabpanels = document.getElementById("tabpanels");
   function groupBody(name) {
     if (groupBodies[name]) return groupBodies[name];
     var wrap = document.createElement("div");
     wrap.className = "f-group";
     wrap.id = groupSlug(name);
     var h = document.createElement("h3");
-    var label = document.createElement("span");
-    label.textContent = name;
-    var chev = document.createElement("span");
-    chev.className = "chev";
-    h.appendChild(label);
-    h.appendChild(chev);
-    // Click the header to collapse/expand the group.
-    h.addEventListener("click", function () { wrap.classList.toggle("collapsed"); });
+    h.textContent = name;
     wrap.appendChild(h);
     var body = document.createElement("div");
     body.className = "f-group-body";
     wrap.appendChild(body);
-    panelBody.appendChild(wrap);
+    tabpanels.appendChild(wrap);
     groupBodies[name] = body;
     groupOrder.push(name);
     return body;
@@ -964,26 +958,32 @@ function demoHtml() {
     copyToClipboard(boilerplateText(location.hash.replace(/^#/, "")), "Boilerplate copied!");
   });
 
-  // Outline: quick-jump chips to each settings group.
-  function buildOutline() {
-    var outline = document.getElementById("outline");
-    outline.innerHTML = "";
-    groupOrder.forEach(function (name) {
-      var chip = document.createElement("button");
-      chip.type = "button";
-      chip.className = "outline-chip";
-      chip.textContent = name;
-      chip.addEventListener("click", function () {
-        var el = document.getElementById(groupSlug(name));
-        if (!el) return;
-        el.classList.remove("collapsed");
-        el.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-      outline.appendChild(chip);
+  // Vertical tabs: one settings group visible at a time, selected from the tab column.
+  function activateTab(name) {
+    groupOrder.forEach(function (g) {
+      var panel = document.getElementById(groupSlug(g));
+      if (panel) panel.classList.toggle("active", g === name);
     });
+    var tabs = document.querySelectorAll("#tabnav .tab");
+    tabs.forEach(function (t) { t.classList.toggle("active", t.dataset.group === name); });
+    document.getElementById("tabpanels").scrollTop = 0;
+  }
+  function buildTabs() {
+    var nav = document.getElementById("tabnav");
+    nav.innerHTML = "";
+    groupOrder.forEach(function (name) {
+      var tab = document.createElement("button");
+      tab.type = "button";
+      tab.className = "tab";
+      tab.dataset.group = name;
+      tab.textContent = name;
+      tab.addEventListener("click", function () { activateTab(name); });
+      nav.appendChild(tab);
+    });
+    if (groupOrder.length > 0) activateTab(groupOrder[0]);
   }
 
-  buildOutline();
+  buildTabs();
   remountWheel();
 })();
 </script>
