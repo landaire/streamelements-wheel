@@ -12,6 +12,7 @@ import type { Rng } from "./model/spin.js";
 export { FIELD_DEFS, buildFieldsSchema } from "./config/fields.js";
 export { parseConfig } from "./config/parse.js";
 export { createAudio } from "./audio/engine.js"; // playground sound-preview buttons
+export { encodeSharedConfig, decodeSharedConfig } from "./config/import.js"; // playground config codec
 
 function mountStyles(doc: Document): void {
   if (doc.getElementById("wheel-styles")) return;

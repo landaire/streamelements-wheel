@@ -344,24 +344,12 @@ function demoHtml() {
     return f ? f.value : "";
   }
 
-  // base64url = base64 with +/ -> -/_ and = padding stripped. encodeURIComponent/
-  // decodeURIComponent + escape/unescape round-trips UTF-8 through btoa/atob, which
-  // only accept Latin1.
-  function toBase64Url(str) {
-    var b64 = btoa(unescape(encodeURIComponent(str)));
-    return b64.replace(/\\+/g, "-").replace(/\\//g, "_").replace(/=+$/, "");
-  }
-  function fromBase64Url(str) {
-    var b64 = str.replace(/-/g, "+").replace(/_/g, "/");
-    while (b64.length % 4) b64 += "=";
-    return decodeURIComponent(escape(atob(b64)));
-  }
-
+  // Config codes are encoded/decoded by the bundle (window.Wheel), so the playground and the
+  // widget share one versioned codec: LW1-prefixed codes are deflate-compressed, unprefixed
+  // codes are legacy uncompressed and still decode.
   function loadFieldDataFromHash() {
-    var hash = location.hash.replace(/^#/, "");
-    if (!hash) return null;
     try {
-      var data = JSON.parse(fromBase64Url(hash));
+      var data = window.Wheel.decodeSharedConfig(location.hash);
       if (data && typeof data === "object") return data;
     } catch (e) {
       // malformed hash: fall back to FIELD_DEFS defaults below
@@ -1049,14 +1037,17 @@ function demoHtml() {
     return diff;
   }
 
-  function syncHash(fieldData) {
+  var hashGen = 0;
+  async function syncHash(fieldData) {
+    var gen = ++hashGen;
     try {
       var diff = diffFromDefaults(fieldData);
       if (Object.keys(diff).length === 0) {
         history.replaceState(null, "", location.pathname + location.search);
         return;
       }
-      var encoded = toBase64Url(JSON.stringify(diff));
+      var encoded = await window.Wheel.encodeSharedConfig(diff);
+      if (gen !== hashGen) return; // a newer remount already wrote the hash; do not clobber it
       history.replaceState(null, "", "#" + encoded);
     } catch (e) {
       // hash sync is best-effort; never block a remount over it
@@ -1156,8 +1147,8 @@ function demoHtml() {
     currentHandle = result && "spin" in result ? result : null;
     attachHubDrag();
     renderWeights(fieldData);
-    syncHash(fieldData);
-    updateShareBar();
+    // Encoding the hash is async (compression); refresh the share bar once it settles.
+    syncHash(fieldData).then(updateShareBar);
   }
 
   document.getElementById("spin").addEventListener("click", function () {
