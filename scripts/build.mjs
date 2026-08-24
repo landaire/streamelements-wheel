@@ -304,6 +304,36 @@ function demoHtml() {
     return "item-" + editorItemSeq + "-" + Math.random().toString(36).slice(2, 7);
   }
 
+  // The comma list and the editor item list are the same items. These convert between them
+  // so they stay in sync until categories are added.
+  var SLICE_WEIGHT_RE = /\\[\\s*([0-9]*\\.?[0-9]+)\\s*(%)?\\s*\\]\\s*$/;
+  function sliceTextToItems(text) {
+    return String(text == null ? "" : text)
+      .split(",")
+      .map(function (p) { return p.trim(); })
+      .filter(function (p) { return p.length > 0; })
+      .map(function (entry) {
+        var m = SLICE_WEIGHT_RE.exec(entry);
+        var t = entry, weight = 1, pct = false;
+        if (m) { t = entry.slice(0, m.index).trim(); weight = Number(m[1]); pct = m[2] === "%"; }
+        return { uid: genItemUid(), text: t, weight: weight, categoryId: "", pct: pct };
+      });
+  }
+  function itemsToSliceText(items) {
+    return items
+      .map(function (it) {
+        var w = "";
+        if (it.pct) w = " [" + it.weight + "%]";
+        else if (it.weight !== 1) w = " [" + it.weight + "]";
+        return it.text + w;
+      })
+      .join(", ");
+  }
+  function sliceEntriesDefault() {
+    var f = FIELD_DEFS.filter(function (x) { return x.key === "sliceEntries"; })[0];
+    return f ? f.value : "";
+  }
+
   // base64url = base64 with +/ -> -/_ and = padding stripped. encodeURIComponent/
   // decodeURIComponent + escape/unescape round-trips UTF-8 through btoa/atob, which
   // only accept Latin1.
@@ -339,33 +369,42 @@ function demoHtml() {
   // Populates the visual editor from a hash-carried advancedConfig JSON, so a shared
   // link with categories/items reopens with the editor pre-filled, not just the raw
   // text field.
-  function loadEditorFromHash() {
+  function loadEditor() {
     var raw = hashFieldData.advancedConfig;
-    if (typeof raw !== "string" || !raw) return;
-    try {
-      var parsed = JSON.parse(raw);
-      if (!parsed || !Array.isArray(parsed.categories) || !Array.isArray(parsed.items)) return;
-      editorState.categories = parsed.categories.map(function (c) {
-        return {
-          id: String(c.id),
-          name: typeof c.name === "string" ? c.name : String(c.id),
-          weight: Number(c.weight),
-          color: typeof c.color === "string" && c.color ? c.color : "#ff8fa3",
-        };
-      });
-      editorState.items = parsed.items.map(function (it) {
-        return {
-          uid: genItemUid(),
-          text: typeof it.text === "string" ? it.text : "",
-          weight: Number(it.weight),
-          categoryId: typeof it.categoryId === "string" ? it.categoryId : "",
-        };
-      });
-    } catch (e) {
-      // malformed hash advancedConfig: leave the editor empty, simple controls still work
+    if (typeof raw === "string" && raw) {
+      try {
+        var parsed = JSON.parse(raw);
+        if (parsed && Array.isArray(parsed.categories) && Array.isArray(parsed.items)) {
+          editorState.categories = parsed.categories.map(function (c) {
+            return {
+              id: String(c.id),
+              name: typeof c.name === "string" ? c.name : String(c.id),
+              weight: Number(c.weight),
+              color: typeof c.color === "string" && c.color ? c.color : "#ff8fa3",
+            };
+          });
+          editorState.items = parsed.items.map(function (it) {
+            return {
+              uid: genItemUid(),
+              text: typeof it.text === "string" ? it.text : "",
+              weight: Number(it.weight),
+              categoryId: typeof it.categoryId === "string" ? it.categoryId : "",
+              pct: false,
+            };
+          });
+          return;
+        }
+      } catch (e) {
+        // malformed advancedConfig: fall through to seeding from the comma list
+      }
     }
+    // No categories/advanced config: the item list mirrors the comma slice list.
+    var sliceText = Object.prototype.hasOwnProperty.call(hashFieldData, "sliceEntries")
+      ? hashFieldData.sliceEntries
+      : sliceEntriesDefault();
+    editorState.items = sliceTextToItems(sliceText);
   }
-  loadEditorFromHash();
+  loadEditor();
 
   function makeLabel(text) {
     var d = document.createElement("div");
@@ -525,17 +564,12 @@ function demoHtml() {
   if (controls.gemMatchScheme) controls.gemMatchScheme.el.addEventListener("change", syncColorVisibility);
   syncColorVisibility();
 
-  var editorGroupBody = groupBody("Wheel Editor");
+  var editorGroupBody = groupBody("Wheel Slices");
   editorGroupBody.insertAdjacentHTML(
     "beforeend",
-    '<div class="ed-intro">Build categories and items visually. Adding at least one item ' +
-      "activates two-level odds (category share x item share) and replaces the simple slice " +
-      'list above.</div>' +
-      '<details class="editor-section" open>' +
-      "<summary>Categories</summary>" +
-      '<div id="ed-cat-list" class="ed-list"></div>' +
-      '<button id="ed-add-cat" type="button" class="ed-add-btn">Add category</button>' +
-      "</details>" +
+    '<div class="ed-intro">The items below mirror the comma list above and stay in sync. ' +
+      "Add categories to give items two-level odds (category share x item share); until then " +
+      "the simple comma list drives the wheel.</div>" +
       '<details class="editor-section" open>' +
       "<summary>Items</summary>" +
       '<div id="ed-item-list" class="ed-list"></div>' +
@@ -543,6 +577,11 @@ function demoHtml() {
       '<button id="ed-add-item" type="button" class="ed-add-btn">Add item</button>' +
       '<button id="ed-shuffle" type="button" class="ed-add-btn">Shuffle</button>' +
       "</div>" +
+      "</details>" +
+      '<details class="editor-section">' +
+      "<summary>Categories</summary>" +
+      '<div id="ed-cat-list" class="ed-list"></div>' +
+      '<button id="ed-add-cat" type="button" class="ed-add-btn">Add category</button>' +
       "</details>",
   );
   catListEl = document.getElementById("ed-cat-list");
@@ -643,7 +682,7 @@ function demoHtml() {
     if (editorState.items.length === 0) {
       var hint = document.createElement("div");
       hint.className = "ed-hint";
-      hint.textContent = "No items yet. The simple slice list above is used until an item is added.";
+      hint.textContent = "No items. Type in the comma list above to populate this list.";
       itemListEl.appendChild(hint);
     }
     editorState.items.forEach(function (item, idx) {
@@ -763,6 +802,25 @@ function demoHtml() {
   renderCategories();
   renderItems();
 
+  // Two-way sync between the comma slice list and the item editor (while there are no
+  // categories). Editing the comma field repopulates the item list; editing items writes
+  // back to the comma field. A set of categories switches to the advancedConfig path.
+  function syncSliceFieldFromItems() {
+    if (!controls.sliceEntries) return;
+    if (editorState.categories.length > 0) return;
+    if (document.activeElement === controls.sliceEntries.el) return; // do not clobber typing
+    controls.sliceEntries.el.value = itemsToSliceText(editorState.items);
+  }
+  if (controls.sliceEntries) {
+    controls.sliceEntries.el.addEventListener("input", function () {
+      editorState.items = sliceTextToItems(controls.sliceEntries.el.value);
+      renderItems();
+      // the generic text listener already scheduled a remount
+    });
+  }
+  // The visual item list replaces the raw advancedConfig JSON in the playground.
+  if (controls.advancedConfig) controls.advancedConfig.row.style.display = "none";
+
   var weightsBody = groupBody("Computed Slice Weights");
 
   function readValue(entry) {
@@ -776,11 +834,14 @@ function demoHtml() {
     Object.keys(controls).forEach(function (key) {
       data[key] = readValue(controls[key]);
     });
-    // The visual editor is the source of truth for advancedConfig whenever it has at
-    // least one item; an empty editor falls back to whatever the raw text field holds
-    // (normally "", i.e. the simple sliceEntries path).
-    if (editorState.items.length > 0) {
+    // Categories present -> two-level odds via advancedConfig. Otherwise the comma list
+    // drives the wheel, and the item list is just its synced view: clear advancedConfig and
+    // derive sliceEntries from the items.
+    if (editorState.categories.length > 0) {
       data.advancedConfig = JSON.stringify(serializeEditor());
+    } else {
+      data.advancedConfig = "";
+      if (editorState.items.length > 0) data.sliceEntries = itemsToSliceText(editorState.items);
     }
     return data;
   }
@@ -843,6 +904,7 @@ function demoHtml() {
 
   function remountWheel() {
     document.querySelectorAll(".wheel-container, .wheel-error").forEach(function (e) { e.remove(); });
+    syncSliceFieldFromItems();
     var fieldData = collectFieldData();
     var result = window.Wheel.mountWidget(document, { fieldData: fieldData });
     currentHandle = result && "spin" in result ? result : null;
