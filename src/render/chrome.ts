@@ -4,6 +4,8 @@ import type { WheelConfig } from "../config/parse.js";
 export interface Chrome {
   title: HTMLElement;
   setTitle(text: string): void;
+  startTitleRoll(labels: readonly string[]): void;
+  stopTitleRoll(): void;
   refit(): void;
 }
 
@@ -284,9 +286,40 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   dom.container.appendChild(titleWrap);
   // Hide the pill entirely while there is no title text (empty title, pre-spin).
   const syncTitleVisibility = (text: string): void => {
+    if (titleWrap.classList.contains("rolling")) return; // the reel keeps the pill shown
     titleWrap.style.display = text.trim().length > 0 ? "" : "none";
   };
   syncTitleVisibility(cfg.title);
+
+  // Slot-machine roll: while spinning, the pill becomes a reel that rolls the slice labels
+  // upward like a cylinder. A duplicated strip loops seamlessly via a CSS animation whose
+  // speed scales with the label count.
+  let reel: HTMLElement | undefined;
+  const startTitleRoll = (labels: readonly string[]): void => {
+    const items = labels.map((l) => l.trim()).filter((l) => l.length > 0);
+    if (items.length === 0) return;
+    stopTitleRoll();
+    title.style.display = "none";
+    reel = el(doc, "title-reel");
+    // Two copies so translateY(-50%) lands on an identical frame for a seamless loop.
+    for (const label of [...items, ...items]) {
+      const cell = el(doc, "title-cell");
+      cell.textContent = label;
+      reel.appendChild(cell);
+    }
+    reel.style.setProperty("--roll-dur", (items.length * 0.22).toFixed(2) + "s");
+    titleWrap.appendChild(reel);
+    titleWrap.classList.add("rolling");
+    titleWrap.style.display = "";
+  };
+  const stopTitleRoll = (): void => {
+    titleWrap.classList.remove("rolling");
+    if (reel) {
+      reel.remove();
+      reel = undefined;
+    }
+    title.style.display = "";
+  };
 
   const fitTextEl = centerpiece.querySelector<HTMLElement>(".hub-text-fit");
   const refit = (): void => {
@@ -305,6 +338,8 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
       title.textContent = text;
       syncTitleVisibility(text);
     },
+    startTitleRoll,
+    stopTitleRoll,
     refit,
   };
 }

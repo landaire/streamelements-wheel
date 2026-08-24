@@ -91,9 +91,13 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
     dom,
     cfg,
     {
-      onStart: () => chrome.setTitle(cfg.spinningText),
+      onStart: () => {
+        if (cfg.slotMachineTitle) chrome.startTitleRoll(cfg.slices.map((s) => s.text));
+        else chrome.setTitle(cfg.spinningText);
+      },
       ...(tickEnabled ? { onTick: () => audio.tick() } : {}),
       onResult: (result) => {
+        chrome.stopTitleRoll(); // end the slot-machine roll before the result title shows
         if (result.kind === "winner") {
           const text = cfg.slices[result.slice as number]!.text;
           announce.winner(text);

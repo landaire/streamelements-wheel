@@ -223,6 +223,12 @@
   font-weight: 600; font-size: 15px; white-space: nowrap;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
 }
+/* Slot-machine roll: the pill becomes a one-line viewport and a duplicated strip of labels
+   scrolls upward, looping seamlessly at translateY(-50%). */
+.title-wrap.rolling { overflow: hidden; height: 1.6em; padding-top: 0; padding-bottom: 0; }
+.title-reel { display: flex; flex-direction: column; will-change: transform; animation: title-roll var(--roll-dur, 3s) linear infinite; }
+.title-cell { height: 1.6em; line-height: 1.6em; white-space: nowrap; text-align: center; }
+@keyframes title-roll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
 .set-style-halfwheel .wheel-clip { clip-path: inset(0 0 40% 0); }
 .confetti {
   position: absolute;

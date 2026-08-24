@@ -23,6 +23,7 @@ export interface WheelConfig {
   countdownSec: number;
   countdownText: string;
   spinningText: string;
+  slotMachineTitle: boolean;
   magnetism: boolean;
   seamBandDeg: Degrees;
   spinForceVariance: number; // 0..1: how much spin force (turns + decel curve) varies per spin
@@ -140,6 +141,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       countdownSec: num(fieldData.countdownTime, FIELD_DEFAULTS.countdownTime as number),
       countdownText: str(fieldData.countdownText, FIELD_DEFAULTS.countdownText as string),
       spinningText: str(fieldData.spinningText, FIELD_DEFAULTS.spinningText as string),
+      slotMachineTitle: bool(fieldData.slotMachineTitle, FIELD_DEFAULTS.slotMachineTitle as boolean),
       magnetism: bool(fieldData.magnetism, FIELD_DEFAULTS.magnetism as boolean),
       seamBandDeg: deg(num(fieldData.seamBand, FIELD_DEFAULTS.seamBand as number)),
       spinForceVariance: Math.max(0, Math.min(1, num(fieldData.spinForceVariance, FIELD_DEFAULTS.spinForceVariance as number))),
