@@ -18,10 +18,20 @@ describe("addChrome", () => {
     chrome.setTitle("Winner!");
     expect(chrome.title.textContent).toBe("Winner!");
   });
-  it("applies scale to the container", () => {
-    const dom = buildWheel(document, cfg);
-    addChrome(document, dom, cfg);
-    expect(dom.container.style.getPropertyValue("--scale").trim()).toBe("2");
+  it("sets a positive fit scale on the container, proportional to cfg.scale", () => {
+    const dom2 = buildWheel(document, cfg); // scaleWidget 2
+    addChrome(document, dom2, cfg);
+    const s2 = parseFloat(dom2.container.style.getPropertyValue("--fit-scale"));
+    expect(s2).toBeGreaterThan(0);
+    const cfg1 = (() => {
+      const r = parseConfig({ sliceEntries: "A, B", scaleWidget: 1 });
+      if (r.kind !== "ok") throw new Error("bad");
+      return r.value;
+    })();
+    const dom1 = buildWheel(document, cfg1);
+    addChrome(document, dom1, cfg1);
+    const s1 = parseFloat(dom1.container.style.getPropertyValue("--fit-scale"));
+    expect(s2).toBeCloseTo(s1 * 2, 5); // fit scales linearly with the user's scale setting
   });
 
   it("refit no-ops entry text when the container has no live layout (jsdom, pre-attach)", () => {

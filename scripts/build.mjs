@@ -99,7 +99,7 @@ function demoHtml() {
 <html lang="en"><head><meta charset="utf-8" /><title>Spinning Wheel - Demo</title>
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <style>
-  :root { color-scheme: dark; }
+  :root { color-scheme: dark; --stage-left: 440px; }
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100vh; background: #1b1b22; }
   body {
@@ -214,10 +214,10 @@ function demoHtml() {
   .ed-add-row { display: flex; gap: 8px; margin-top: 4px; }
   .ed-add-btn { flex: 1; background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 6px; padding: 8px 10px; font-size: 12px; cursor: pointer; }
   .ed-add-btn:hover { background: #35323f; }
-  /* Outline: quick-jump chips to each settings group. */
-  #outline { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
-  .outline-chip { background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 999px; padding: 3px 9px; font-size: 11px; cursor: pointer; }
-  .outline-chip:hover { background: #35323f; color: #fff; }
+  /* Outline: a vertical quick-jump list (vertical tabs) to each settings group. */
+  #outline { display: flex; flex-direction: column; gap: 1px; margin-top: 10px; max-height: 40vh; overflow-y: auto; }
+  .outline-chip { display: block; width: 100%; text-align: left; background: none; color: #b8bdd6; border: none; border-left: 2px solid transparent; border-radius: 0; padding: 4px 10px; font-size: 12px; cursor: pointer; }
+  .outline-chip:hover { background: rgba(255, 255, 255, 0.06); color: #fff; border-left-color: #6b4bd8; }
   /* Collapsible groups. */
   .f-group h3 { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
   .f-group h3 .chev { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; opacity: 0.7; transition: transform 0.15s; flex: none; }

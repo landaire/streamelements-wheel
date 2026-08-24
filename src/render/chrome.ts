@@ -249,8 +249,22 @@ function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): vo
   centerpiece.appendChild(icon);
 }
 
+// Base coordinate box the widget is authored in; --fit-scale scales it into the host box.
+const BASE_W = 500;
+const BASE_H = 596; // 500 disc + 96 headroom (must match --disc + --hr in wheel.css)
+const FIT_MARGIN = 0.96; // leaves a little breathing room inside the box
+
 export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrome {
-  dom.container.style.setProperty("--scale", String(cfg.scale));
+  // Scale the whole widget to fit the available area (host layer minus any side panel via
+  // --stage-left) and centre it. Runs on mount and on resize.
+  const fitStage = (): void => {
+    if (typeof window === "undefined") return;
+    const stageLeft = parseFloat(getComputedStyle(dom.container).getPropertyValue("--stage-left")) || 0;
+    const availW = Math.max(1, window.innerWidth - stageLeft);
+    const availH = Math.max(1, window.innerHeight);
+    const fit = Math.min(availW / BASE_W, availH / BASE_H) * FIT_MARGIN * cfg.scale;
+    dom.container.style.setProperty("--fit-scale", String(fit));
+  };
 
   const details = el(doc, "details");
   const centerpiece = el(doc, "centerpiece");
@@ -274,6 +288,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
 
   const fitTextEl = centerpiece.querySelector<HTMLElement>(".hub-text-fit");
   const refit = (): void => {
+    fitStage();
     if (fitTextEl) fitHubText(fitTextEl);
     refitEntries(dom);
   };
