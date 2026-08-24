@@ -21,6 +21,14 @@ describe("combineLabels", () => {
     expect(combineLabels("Story", "Story")).toBe("2 Stories");
   });
 
+  it("matches the plural suffix to the casing of the word", () => {
+    expect(combineLabels("SPIN", "SPIN")).toBe("2 SPINS");
+    expect(combineLabels("BOX", "BOX")).toBe("2 BOXES");
+    expect(combineLabels("STORY", "STORY")).toBe("2 STORIES");
+    expect(combineLabels("Spin", "Spin")).toBe("2 Spins"); // capitalized keeps a lowercase suffix
+    expect(combineLabels("FREE SPIN", "FREE SPIN")).toBe("2 FREE SPINS");
+  });
+
   it("sums matching currency prefixes and preserves order of first appearance", () => {
     expect(combineLabels("$10 + 100 pts", "$5 + 50 pts")).toBe("$15 + 150 pts");
   });

@@ -56,9 +56,14 @@ function formatNumber(n: number): string {
 function pluralizeWord(word: string): string {
   const lower = word.toLowerCase();
   if (/s$/.test(lower)) return word; // already ends in s (plural or abbrev like "pts"): leave it
-  if (/(?:x|z|ch|sh)$/.test(lower)) return word + "es";
-  if (/[^aeiou]y$/.test(lower)) return word.slice(0, -1) + "ies";
-  return word + "s";
+  // Match the added suffix to the case of the letter it follows, so "SPIN" -> "SPINS" and
+  // "Spin" -> "Spins", not "SPINs".
+  const last = word[word.length - 1] ?? "";
+  const upper = last !== "" && last === last.toUpperCase() && last !== last.toLowerCase();
+  const suf = (s: string): string => (upper ? s.toUpperCase() : s);
+  if (/(?:x|z|ch|sh)$/.test(lower)) return word + suf("es");
+  if (/[^aeiou]y$/.test(lower)) return word.slice(0, -1) + suf("ies");
+  return word + suf("s");
 }
 function pluralize(name: string): string {
   const parts = name.split(" ");
