@@ -121,16 +121,18 @@
   pointer-events: none;
 }
 .entry-text {
-  /* Anchors the label in the outer part of the wedge; fitEntryText caps its radial length
-     so large labels stay clear of the centre hub. */
-  margin-top: 15%;
-  max-width: 30%;
+  /* Centred at ~0.56R (the middle of the band between hub and rim) and grown symmetrically
+     by fitEntryText, so a bigger label never creeps into the centre hub. */
+  position: absolute;
+  top: 22%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  transform-origin: center center;
   text-align: center;
   color: var(--entry-color, #fff);
   font-size: var(--entry-font-size, 15px);
   font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
-  transform: rotate(90deg);
 }
 :root {
   --slice-bg-even: #ab4bb8;
@@ -148,6 +150,7 @@
 .centerpiece {
   position: absolute; left: 50%; top: 50%; width: 22%; height: 22%;
   transform: translate(-50%, -50%); border-radius: 50%;
+  border: 4px solid var(--rim-color, #6f2f80);
   background: radial-gradient(
     circle at 50% 50%,
     var(--hub-inner, #ffe1f0) 0%, var(--hub-inner, #ffe1f0) 44%,
@@ -220,15 +223,12 @@
   position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
   padding: 6px 14px; border-radius: 999px;
   background: var(--plate-bg, #ffe1e7); color: var(--title-color, #b64e5f);
-  font-weight: 600; font-size: 15px; white-space: nowrap;
+  font-weight: 600; font-size: 15px; white-space: nowrap; text-align: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+  /* min-width is set to the widest label so the slot-machine roll never resizes the pill;
+     a fast transition animates the rare change (e.g. a two-option winner). */
+  transition: min-width 0.12s ease;
 }
-/* Slot-machine roll: the pill becomes a one-line viewport and a duplicated strip of labels
-   scrolls upward, looping seamlessly at translateY(-50%). */
-.title-wrap.rolling { overflow: hidden; height: 1.6em; padding-top: 0; padding-bottom: 0; }
-.title-reel { display: flex; flex-direction: column; will-change: transform; animation: title-roll var(--roll-dur, 3s) linear infinite; }
-.title-cell { height: 1.6em; line-height: 1.6em; white-space: nowrap; text-align: center; }
-@keyframes title-roll { from { transform: translateY(0); } to { transform: translateY(-50%); } }
 .set-style-halfwheel .wheel-clip { clip-path: inset(0 0 40% 0); }
 .confetti {
   position: absolute;

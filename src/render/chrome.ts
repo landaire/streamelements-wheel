@@ -4,8 +4,6 @@ import type { WheelConfig } from "../config/parse.js";
 export interface Chrome {
   title: HTMLElement;
   setTitle(text: string): void;
-  startTitleRoll(labels: readonly string[]): void;
-  stopTitleRoll(): void;
   refit(): void;
 }
 
@@ -104,17 +102,22 @@ export function fitHubText(wrap: HTMLElement): void {
 // their wedge as large as fits (capped at MAX to stay tasteful) and shrink no smaller than
 // MIN. R is 250 in practice, so MAX ~ 34% of the disc radius on the biggest slices.
 const MIN_ENTRY_FONT_PX = 6;
-const MAX_ENTRY_FONT_PX = 36;
+const MAX_ENTRY_FONT_PX = 40;
+// The label sits centred in the radial band between the hub and the rim, and reads across
+// most of that band before wrapping (a little safe room, not too much).
+const LABEL_MID_R = 0.56; // fraction of R at the label centre
+const LABEL_RADIAL = 0.62; // fraction of R the label may span radially
+const LABEL_TANGENT = 0.86; // fraction of the wedge's angular width the label may use
 
-// Auto-scales one slice label's font-size to the largest that fits within its slice, both
-// radially (the line length, capped by maxWidth so long text wraps) and tangentially (the
-// stacked-line height, capped by the slice's angular width at the label's radius). No-ops
-// when R is 0 (no live layout yet, e.g. pre-attach or jsdom).
-export function fitEntryText(textEl: HTMLElement, sizeTurn: number, R: number): void {
-  if (!R) return;
-  const rText = 0.6 * R; // radius at which the label is centered
-  const radialLen = 0.46 * R; // available length along the radial line (kept clear of the hub)
-  const tangentialWidth = 2 * rText * Math.sin(sizeTurn * Math.PI) * 0.84; // available width across the slice
+// Returns the largest font-size (px) at which a slice label fits its wedge: radially (line
+// length, capped by maxWidth so long text wraps) and tangentially (stacked-line height,
+// capped by the wedge's angular width). Sets that size on the element and returns it.
+// Returns MIN when R is 0 (no live layout yet, e.g. pre-attach or jsdom).
+export function fitEntryText(textEl: HTMLElement, sizeTurn: number, R: number): number {
+  if (!R) return MIN_ENTRY_FONT_PX;
+  const rText = LABEL_MID_R * R;
+  const radialLen = LABEL_RADIAL * R;
+  const tangentialWidth = 2 * rText * Math.sin(sizeTurn * Math.PI) * LABEL_TANGENT;
   textEl.style.maxWidth = radialLen + "px";
   let lo = MIN_ENTRY_FONT_PX;
   let hi = MAX_ENTRY_FONT_PX;
@@ -126,23 +129,35 @@ export function fitEntryText(textEl: HTMLElement, sizeTurn: number, R: number): 
     else hi = mid;
   }
   textEl.style.fontSize = lo + "px";
+  return lo;
 }
 
-// Refits every slice label against the wheel's live size. dom.container.clientWidth is
-// 0 before attach or under jsdom (no stylesheet layout), so this no-ops safely there,
-// same as fitHubText.
+// Refits every slice label, then unifies the size: the bulk of the labels share one common
+// size (the largest all of them fit), and only labels in much tighter wedges keep their own
+// smaller size. dom.container.clientWidth is 0 before attach or under jsdom, so this no-ops.
 export function refitEntries(dom: WheelDom): void {
   const R = dom.container.clientWidth / 2;
   if (!R) return;
+  const els: HTMLElement[] = [];
+  const fits: number[] = [];
   for (const entry of dom.entries) {
-    const sizeTurnAttr = entry.dataset.sizeTurn;
-    if (!sizeTurnAttr) continue;
-    const sizeTurn = Number(sizeTurnAttr);
+    const sizeTurn = Number(entry.dataset.sizeTurn);
     if (!Number.isFinite(sizeTurn)) continue;
     const textEl = entry.querySelector<HTMLElement>(".entry-text");
     if (!textEl) continue;
-    fitEntryText(textEl, sizeTurn, R);
+    fits.push(fitEntryText(textEl, sizeTurn, R));
+    els.push(textEl);
   }
+  if (els.length === 0) return;
+  const maxFit = Math.max(...fits);
+  // Common size = smallest fit among labels that are not far-tighter outliers.
+  let common = maxFit;
+  for (const f of fits) {
+    if (f >= maxFit * 0.55) common = Math.min(common, f);
+  }
+  els.forEach((el, i) => {
+    el.style.fontSize = Math.min(common, fits[i]!) + "px";
+  });
 }
 
 // Curved hub text flows along a circular textPath. jsdom has no font metrics, so the
@@ -286,44 +301,28 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   dom.container.appendChild(titleWrap);
   // Hide the pill entirely while there is no title text (empty title, pre-spin).
   const syncTitleVisibility = (text: string): void => {
-    if (titleWrap.classList.contains("rolling")) return; // the reel keeps the pill shown
     titleWrap.style.display = text.trim().length > 0 ? "" : "none";
   };
   syncTitleVisibility(cfg.title);
 
-  // Slot-machine roll: while spinning, the pill becomes a reel that rolls the slice labels
-  // upward like a cylinder. A duplicated strip loops seamlessly via a CSS animation whose
-  // speed scales with the label count.
-  let reel: HTMLElement | undefined;
-  const startTitleRoll = (labels: readonly string[]): void => {
-    const items = labels.map((l) => l.trim()).filter((l) => l.length > 0);
-    if (items.length === 0) return;
-    stopTitleRoll();
-    title.style.display = "none";
-    reel = el(doc, "title-reel");
-    // Two copies so translateY(-50%) lands on an identical frame for a seamless loop.
-    for (const label of [...items, ...items]) {
-      const cell = el(doc, "title-cell");
-      cell.textContent = label;
-      reel.appendChild(cell);
-    }
-    reel.style.setProperty("--roll-dur", (items.length * 0.22).toFixed(2) + "s");
-    titleWrap.appendChild(reel);
-    titleWrap.classList.add("rolling");
-    titleWrap.style.display = "";
-  };
-  const stopTitleRoll = (): void => {
-    titleWrap.classList.remove("rolling");
-    if (reel) {
-      reel.remove();
-      reel = undefined;
-    }
-    title.style.display = "";
+  // Keep the pill from resizing as the slot-machine roll cycles labels of different lengths:
+  // set its min-width to the widest of the title and every option. A CSS transition animates
+  // any change that does occur (e.g. a two-option winner) quickly.
+  const measureCtx = doc.createElement("canvas").getContext("2d");
+  const fitTitleWidth = (): void => {
+    if (!measureCtx) return;
+    const cs = getComputedStyle(title);
+    if (!cs.fontSize || cs.fontSize === "0px") return;
+    measureCtx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
+    let max = measureCtx.measureText(cfg.title).width;
+    for (const s of cfg.slices) max = Math.max(max, measureCtx.measureText(s.text).width);
+    titleWrap.style.minWidth = Math.ceil(max) + "px";
   };
 
   const fitTextEl = centerpiece.querySelector<HTMLElement>(".hub-text-fit");
   const refit = (): void => {
     fitStage();
+    fitTitleWidth();
     if (fitTextEl) fitHubText(fitTextEl);
     refitEntries(dom);
   };
@@ -338,8 +337,6 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
       title.textContent = text;
       syncTitleVisibility(text);
     },
-    startTitleRoll,
-    stopTitleRoll,
     refit,
   };
 }

@@ -28,6 +28,7 @@ export interface WheelConfig {
   seamBandDeg: Degrees;
   spinForceVariance: number; // 0..1: how much spin force (turns + decel curve) varies per spin
   seamResult: SeamResult; // magnetism-off: "respin" (on the line) or "both" adjacent slices win
+  seamJoinText: string; // placed between the two options when "both" win
   respinText: string;
   spinCommand: string;
   scheme: ColorScheme;
@@ -147,6 +148,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       spinForceVariance: Math.max(0, Math.min(1, num(fieldData.spinForceVariance, FIELD_DEFAULTS.spinForceVariance as number))),
       // Landing on the line counts as both slices winning by default; not a UI toggle.
       seamResult: fieldData.seamResult === "respin" ? "respin" : "both",
+      seamJoinText: str(fieldData.seamJoinText, FIELD_DEFAULTS.seamJoinText as string),
       respinText: str(fieldData.respinText, FIELD_DEFAULTS.respinText as string),
       spinCommand: str(fieldData.spinCommand, FIELD_DEFAULTS.spinCommand as string),
       scheme: resolveScheme(fieldData),

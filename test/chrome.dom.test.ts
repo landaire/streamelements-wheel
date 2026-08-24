@@ -57,12 +57,12 @@ describe("fitEntryText", () => {
     const dom = buildWheel(document, cfg);
     const textEl = dom.entries[0]!.querySelector<HTMLElement>(".entry-text")!;
     fitEntryText(textEl, 0.25, 200);
-    expect(textEl.style.maxWidth).toBe(0.46 * 200 + "px");
+    expect(textEl.style.maxWidth).toBe(0.62 * 200 + "px");
     // jsdom reports scrollWidth/scrollHeight as 0 (no real text layout), so every candidate
     // size "fits" and the search converges to the max font-size cap.
     const fs = Number.parseFloat(textEl.style.fontSize);
     expect(fs).toBeGreaterThan(15);
-    expect(fs).toBeLessThanOrEqual(44);
+    expect(fs).toBeLessThanOrEqual(40);
   });
 });
 

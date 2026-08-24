@@ -1,6 +1,7 @@
 import type { WheelDom } from "../render/wheel.js";
 import type { WheelConfig } from "../config/parse.js";
-import { layout } from "../model/geometry.js";
+import { layout, sliceAtAngle, type SliceLayout } from "../model/geometry.js";
+import { deg, normalizeDeg } from "../model/units.js";
 import {
   resolveLanding,
   pickRestAngle,
@@ -16,6 +17,9 @@ export interface SpinHooks {
   onResult(result: SpinResult): void;
   onStart?(): void;
   onTick?(): void;
+  // The slice currently under the pointer during the spin, whenever it changes. Driven by
+  // the live rotation, so it tracks the wheel's speed.
+  onSpinSlice?(index: number): void;
 }
 
 export interface Animator {
@@ -43,15 +47,23 @@ function readTransformAngleDeg(elm: HTMLElement): number | undefined {
   return Math.atan2(b, a) * (180 / Math.PI);
 }
 
-// Drives onTick once per (360 / sliceCount) degrees of ACTUAL rendered rotation, sampled via
-// requestAnimationFrame from the wheel's computed transform. Stops once isDone() is true, and
-// never reschedules a frame if a rotation reading is unavailable, so it is inert under jsdom.
-function driveTicks(wheelEl: HTMLElement, sliceCount: number, onTick: () => void, isDone: () => boolean): void {
+interface FrameHooks {
+  onTick?: (() => void) | undefined;
+  onSlice?: ((index: number) => void) | undefined;
+}
+
+// Samples the wheel's live rotation via requestAnimationFrame. Drives onTick once per
+// (360 / sliceCount) degrees of ACTUAL rendered rotation, and reports the slice under the
+// pointer (onSlice) whenever it changes -- both track the wheel's real speed. Stops once
+// isDone() is true, and never reschedules if a rotation reading is unavailable, so it is
+// inert under jsdom.
+function driveFrame(wheelEl: HTMLElement, laid: readonly SliceLayout[], hooks: FrameHooks, isDone: () => boolean): void {
   if (typeof requestAnimationFrame !== "function") return;
-  const stepDeg = 360 / sliceCount;
+  const stepDeg = 360 / laid.length;
   let laps = 0;
   let lastRaw: number | undefined;
   let nextThreshold = stepDeg;
+  let lastSlice = -1;
 
   const frame = (): void => {
     if (isDone()) return;
@@ -59,10 +71,20 @@ function driveTicks(wheelEl: HTMLElement, sliceCount: number, onTick: () => void
     if (raw === undefined) return; // no computed transform available; stay inert
     if (lastRaw !== undefined && raw < lastRaw - 180) laps += 1; // wrapped 180 -> -180
     lastRaw = raw;
-    const accumulated = laps * 360 + raw;
-    while (accumulated >= nextThreshold) {
-      onTick();
-      nextThreshold += stepDeg;
+    if (hooks.onTick) {
+      const accumulated = laps * 360 + raw;
+      while (accumulated >= nextThreshold) {
+        hooks.onTick();
+        nextThreshold += stepDeg;
+      }
+    }
+    if (hooks.onSlice) {
+      // pointer degree = normalize(90 - rotation); laps*360 drops out under normalization.
+      const slice = sliceAtAngle(laid, normalizeDeg(deg(90 - raw))) as number;
+      if (slice !== lastSlice) {
+        lastSlice = slice;
+        hooks.onSlice(slice);
+      }
     }
     requestAnimationFrame(frame);
   };
@@ -135,7 +157,9 @@ export function createAnimator(
     };
     dom.wheel.addEventListener("animationend", finish, { once: true });
     const timer = setTimeout(finish, cfg.spinDurationSec * 1000 + SETTLE_GRACE_MS);
-    if (hooks.onTick) driveTicks(dom.wheel, laid.length, hooks.onTick, () => done);
+    if (hooks.onTick || hooks.onSpinSlice) {
+      driveFrame(dom.wheel, laid, { onTick: hooks.onTick, onSlice: hooks.onSpinSlice }, () => done);
+    }
   };
 
   return { spin, isSpinning: () => spinning, currentRotationDeg: () => rotation };

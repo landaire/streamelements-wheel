@@ -92,22 +92,24 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
     cfg,
     {
       onStart: () => {
-        if (cfg.slotMachineTitle) chrome.startTitleRoll(cfg.slices.map((s) => s.text));
+        if (cfg.slotMachineTitle && cfg.slices.length > 0) chrome.setTitle(cfg.slices[0]!.text);
         else chrome.setTitle(cfg.spinningText);
       },
       ...(tickEnabled ? { onTick: () => audio.tick() } : {}),
+      // Slot-machine title: the current pointer slice, driven by the live rotation.
+      ...(cfg.slotMachineTitle ? { onSpinSlice: (i: number) => chrome.setTitle(cfg.slices[i]?.text ?? "") } : {}),
       onResult: (result) => {
-        chrome.stopTitleRoll(); // end the slot-machine roll before the result title shows
         if (result.kind === "winner") {
           const text = cfg.slices[result.slice as number]!.text;
           announce.winner(text);
           if (!cfg.disableSound) audio.win();
           if (!cfg.disableConfetti) confetti.fire();
         } else if (cfg.seamResult === "both") {
-          // On the line counts as both adjacent slices winning: announce both, celebrate.
+          // On the line counts as both adjacent slices winning: both in quotes, joined by
+          // the configurable join text, then celebrate.
           const a = cfg.slices[result.between[0] as number]!.text;
           const bText = cfg.slices[result.between[1] as number]!.text;
-          announce.winner(a + " + " + bText);
+          announce.winner('"' + a + '"' + cfg.seamJoinText + '"' + bText + '"');
           if (!cfg.disableSound) audio.win();
           if (!cfg.disableConfetti) confetti.fire();
         } else {
