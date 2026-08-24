@@ -125,26 +125,28 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: AudioConfig): A
   // ~1.6s -- a ~1250 Hz fundamental with bright partials up to ~8 kHz, matching a real
   // cash-register ring. Money.
   const cashRegisterSynth = (): void => {
-    // Struck-bell voice: a fundamental plus bright, mostly-inharmonic partials.
+    // Struck-bell voice: a quiet fundamental for body and bright upper partials, with the
+    // loudest partial near 2.9x (so a ~1245 Hz bell rings brightest around ~3600 Hz, like the
+    // reference) rather than sounding deep.
     const bell = (atSec: number, base: number, gain: number, decaySec: number): void => {
       const partials: [number, number][] = [
-        [1, 1],
-        [2.01, 0.55],
-        [2.68, 0.4],
-        [3.7, 0.28],
-        [4.72, 0.2],
-        [6.4, 0.13],
+        [1, 0.32],
+        [2.0, 0.55],
+        [2.9, 1.0],
+        [3.9, 0.62],
+        [5.2, 0.35],
+        [6.8, 0.18],
       ];
       for (const [ratio, g] of partials) {
-        tone({ freq: base * ratio, type: "sine", peak: gain * g, attackSec: 0.001, decaySec: decaySec * (ratio < 1.5 ? 1 : 0.55), atSec });
+        tone({ freq: base * ratio, type: "sine", peak: gain * g, attackSec: 0.001, decaySec: decaySec * (ratio <= 4 ? 0.9 : 0.5), atSec });
       }
     };
     // cha: a short bright hit (broadband click + a quick bell)
     noise({ durSec: 0.035, filterHz: 3200, q: 0.5, peak: 0.13, atSec: 0 });
-    bell(0.0, 1050, 0.1, 0.22);
+    bell(0.0, 1050, 0.09, 0.22);
     // CHING: a second bright hit and the long ringing bell
     noise({ durSec: 0.05, filterHz: 3600, q: 0.5, peak: 0.14, atSec: 0.16 });
-    bell(0.16, 1245, 0.17, 1.6);
+    bell(0.16, 1245, 0.14, 1.6);
   };
 
   // On-the-line chime: same impact-plus-ring shape as the win, but a suspended C-F-G cluster
