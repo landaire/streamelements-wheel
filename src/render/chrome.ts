@@ -98,23 +98,25 @@ export function fitHubText(wrap: HTMLElement): void {
   inner.style.fontSize = lo + "px";
 }
 
-// Base entry font-size, matching --entry-font-size's default in wheel.css. Fit only
-// ever shrinks from here; there is no per-config entries font-size field yet.
-const BASE_ENTRY_FONT_PX = 15;
+// Slice-label font-size bounds, in the 500px base coordinate space. Labels grow to fill
+// their wedge as large as fits (capped at MAX to stay tasteful) and shrink no smaller than
+// MIN. R is 250 in practice, so MAX ~ 34% of the disc radius on the biggest slices.
+const MIN_ENTRY_FONT_PX = 6;
+const MAX_ENTRY_FONT_PX = 36;
 
-// Auto-scales one slice label's font-size to fit within its slice, both radially (the
-// line length, capped by maxWidth so long text wraps) and tangentially (the stacked-line
-// height, capped by the slice's angular width at the label's radius). No-ops when R is 0
-// (no live layout yet, e.g. pre-attach or jsdom).
+// Auto-scales one slice label's font-size to the largest that fits within its slice, both
+// radially (the line length, capped by maxWidth so long text wraps) and tangentially (the
+// stacked-line height, capped by the slice's angular width at the label's radius). No-ops
+// when R is 0 (no live layout yet, e.g. pre-attach or jsdom).
 export function fitEntryText(textEl: HTMLElement, sizeTurn: number, R: number): void {
   if (!R) return;
   const rText = 0.6 * R; // radius at which the label is centered
-  const radialLen = 0.56 * R; // available length along the radial line
-  const tangentialWidth = 2 * rText * Math.sin(sizeTurn * Math.PI) * 0.82; // available width across the slice
+  const radialLen = 0.46 * R; // available length along the radial line (kept clear of the hub)
+  const tangentialWidth = 2 * rText * Math.sin(sizeTurn * Math.PI) * 0.84; // available width across the slice
   textEl.style.maxWidth = radialLen + "px";
-  let lo = 5;
-  let hi = BASE_ENTRY_FONT_PX;
-  for (let i = 0; i < 14; i++) {
+  let lo = MIN_ENTRY_FONT_PX;
+  let hi = MAX_ENTRY_FONT_PX;
+  for (let i = 0; i < 16; i++) {
     const mid = (lo + hi) / 2;
     textEl.style.fontSize = mid + "px";
     const fits = textEl.scrollHeight <= tangentialWidth && textEl.scrollWidth <= radialLen;

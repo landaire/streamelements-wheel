@@ -120,8 +120,9 @@
   pointer-events: none;
 }
 .entry-text {
-  /* Places the label near the radial middle of the wedge (was hugging the rim). */
-  margin-top: 21%;
+  /* Anchors the label in the outer part of the wedge; fitEntryText caps its radial length
+     so large labels stay clear of the centre hub. */
+  margin-top: 15%;
   max-width: 30%;
   text-align: center;
   color: var(--entry-color, #fff);

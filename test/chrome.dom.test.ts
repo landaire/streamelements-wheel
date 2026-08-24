@@ -53,14 +53,16 @@ describe("fitEntryText", () => {
     expect(textEl.style.maxWidth).toBe("");
   });
 
-  it("caps radial maxWidth from R and only shrinks toward the base font-size", () => {
+  it("caps radial maxWidth from R and grows toward the max font-size when space allows", () => {
     const dom = buildWheel(document, cfg);
     const textEl = dom.entries[0]!.querySelector<HTMLElement>(".entry-text")!;
     fitEntryText(textEl, 0.25, 200);
-    expect(textEl.style.maxWidth).toBe(0.56 * 200 + "px");
-    // jsdom reports scrollWidth/scrollHeight as 0 (no real text layout), so every
-    // candidate size "fits" and the search converges to the base font-size cap.
-    expect(Number.parseFloat(textEl.style.fontSize)).toBeLessThanOrEqual(15);
+    expect(textEl.style.maxWidth).toBe(0.46 * 200 + "px");
+    // jsdom reports scrollWidth/scrollHeight as 0 (no real text layout), so every candidate
+    // size "fits" and the search converges to the max font-size cap.
+    const fs = Number.parseFloat(textEl.style.fontSize);
+    expect(fs).toBeGreaterThan(15);
+    expect(fs).toBeLessThanOrEqual(44);
   });
 });
 
