@@ -28,6 +28,7 @@ export interface WheelConfig {
   slotMachineTitle: boolean;
   magnetism: boolean;
   seamBandDeg: Degrees;
+  showSeamZone: boolean; // overlay the on-the-line zone bands (preview aid)
   spinForceVariance: number; // 0..1: how much spin force (turns + decel curve) varies per spin
   seamResult: SeamResult; // magnetism-off: "respin" (on the line) or "both" adjacent slices win
   seamCombine: boolean; // sum matching numbered groups from both options instead of quoting
@@ -155,6 +156,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       slotMachineTitle: bool(fieldData.slotMachineTitle, FIELD_DEFAULTS.slotMachineTitle as boolean),
       magnetism: bool(fieldData.magnetism, FIELD_DEFAULTS.magnetism as boolean),
       seamBandDeg: deg(num(fieldData.seamBand, FIELD_DEFAULTS.seamBand as number)),
+      showSeamZone: bool(fieldData.showSeamZone, FIELD_DEFAULTS.showSeamZone as boolean),
       spinForceVariance: Math.max(0, Math.min(1, num(fieldData.spinForceVariance, FIELD_DEFAULTS.spinForceVariance as number))),
       // Landing on the line counts as both slices winning by default; not a UI toggle.
       seamResult: fieldData.seamResult === "respin" ? "respin" : "both",

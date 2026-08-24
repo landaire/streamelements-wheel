@@ -75,19 +75,19 @@ describe("spin resolution", () => {
     expect(a).toBeLessThan(360);
   });
 
-  it("small slice is never winnable when 2*seamBandDeg >= slice arc", () => {
-    // weights [1, 20]: slice 0 arc = 360*1/21 ~= 17.14 deg; slice 1 arc ~= 342.86 deg
-    // with seamBandDeg deg(12), 2*band = 24 > 17.14, so slice 0 is fully consumed by seams
+  it("thin slice keeps a winnable center even when the configured band would swallow it", () => {
+    // weights [1, 20]: slice 0 arc = 360*1/21 ~= 17.14 deg. A raw band of 12 deg would eat
+    // 2*12 = 24 > 17.14 and leave nothing, but the per-seam band is clamped to a fraction of
+    // the neighbouring arc, so slice 0 still wins across its center.
     const wl = layout(mk([1, 20]));
-    const seamBand = deg(12);
     let hasWinner0 = false;
-    const N = 1000;
+    const N = 2000;
     for (let i = 0; i < N; i++) {
       const a = deg(((i + 0.5) / N) * 360);
-      const r = resolveLanding(wl, a, { magnetism: false, seamBandDeg: seamBand });
+      const r = resolveLanding(wl, a, { magnetism: false, seamBandDeg: deg(12) });
       if (r.kind === "winner" && (r.slice as number) === 0) hasWinner0 = true;
     }
-    expect(hasWinner0).toBe(false);
+    expect(hasWinner0).toBe(true);
   });
 
   it("pickForce: variance 0 is always neutral 0.5", () => {

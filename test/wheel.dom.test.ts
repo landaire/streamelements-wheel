@@ -53,6 +53,18 @@ describe("buildWheel", () => {
     });
   });
 
+  it("omits seam-zone overlays by default and draws one per seam when showSeamZone is on", () => {
+    const off = buildWheel(document, cfg);
+    expect(off.wheel.querySelectorAll("path.seam-zone").length).toBe(0);
+
+    const r = parseConfig({ sliceEntries: "A, B, C, D", showSeamZone: true });
+    if (r.kind !== "ok") throw new Error("bad");
+    const on = buildWheel(document, r.value);
+    const zones = on.wheel.querySelectorAll("path.seam-zone");
+    expect(zones.length).toBe(4);
+    zones.forEach((z) => expect(z.getAttribute("d")).toMatch(/^M 250 250 L /));
+  });
+
   it("draws each wedge path starting at the disc center", () => {
     const dom = buildWheel(document, cfg);
     for (const path of dom.slices) {

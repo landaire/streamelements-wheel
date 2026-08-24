@@ -40,6 +40,8 @@ export interface SeamInfo {
   dist: Degrees;
   between: [SliceIndex, SliceIndex];
   seam: Degrees; // the boundary angle itself, so a seam landing can snap exactly onto the line
+  prevSizeTurn: Turns; // arc of the slice ending at this seam
+  nextSizeTurn: Turns; // arc of the slice starting at this seam
 }
 
 export function nearestSeam(layouts: readonly SliceLayout[], d: Degrees): SeamInfo {
@@ -56,8 +58,21 @@ export function nearestSeam(layouts: readonly SliceLayout[], d: Degrees): SeamIn
       bi = i;
     }
   }
-  const prev = layouts[(bi - 1 + n) % n]!.index; // slice ending at this seam
-  const next = layouts[bi]!.index; // slice starting at this seam
-  const seam = normalizeDeg(deg((layouts[bi]!.startTurn as number) * 360));
-  return { dist: deg(best), between: [prev, next], seam };
+  const prevL = layouts[(bi - 1 + n) % n]!; // slice ending at this seam
+  const nextL = layouts[bi]!; // slice starting at this seam
+  const seam = normalizeDeg(deg((nextL.startTurn as number) * 360));
+  return { dist: deg(best), between: [prevL.index, nextL.index], seam, prevSizeTurn: prevL.sizeTurn, nextSizeTurn: nextL.sizeTurn };
+}
+
+// Largest share of the smaller adjacent slice a single seam's band may claim on each side.
+// A slice touches two seams, so 2 x this <= 0.7 leaves every slice at least ~30% of its arc
+// winnable -- a hair-thin slice can never be swallowed whole by its two seam zones.
+export const MAX_SEAM_FRACTION = 0.35;
+
+// The seam band actually applied at one boundary: the configured band, capped so it never
+// consumes more than MAX_SEAM_FRACTION of the smaller neighbouring slice. On normal wheels
+// the cap never bites; it only shrinks the band around unusually thin slices.
+export function effectiveSeamBandDeg(prevSizeTurn: Turns, nextSizeTurn: Turns, configuredBandDeg: number): number {
+  const smallerArcDeg = Math.min(prevSizeTurn as number, nextSizeTurn as number) * 360;
+  return Math.min(configuredBandDeg, MAX_SEAM_FRACTION * smallerArcDeg);
 }

@@ -1,5 +1,5 @@
 import { deg, normalizeDeg, type Degrees, type SliceIndex } from "./units.js";
-import { sliceAtAngle, sliceCenterDeg, nearestSeam, type SliceLayout } from "./geometry.js";
+import { sliceAtAngle, sliceCenterDeg, nearestSeam, effectiveSeamBandDeg, type SliceLayout } from "./geometry.js";
 
 export type Rng = () => number;
 
@@ -65,12 +65,13 @@ export function resolveLanding(
 
     return { kind: "winner", slice, restAngle: sliceCenterDeg(l) };
   }
-  // With magnetism off, each slice loses 2*seamBandDeg of winning arc at its two edges,
-  // so small slices are proportionally deweighted among winners. A slice whose arc <=
-  // 2*seamBandDeg is never winnable with magnetism off (always resolves to seam).
-  // Phase 2 config validation will warn when 2*seamBandDeg >= the smallest slice arc.
+  // With magnetism off, each slice loses up to 2*seamBandDeg of winning arc at its two
+  // edges, so small slices are proportionally deweighted among winners. The per-seam band is
+  // capped (effectiveSeamBandDeg) so no slice is ever consumed whole: even a hair-thin slice
+  // keeps a winnable center.
   const seam = nearestSeam(layout, restAngle);
-  if ((seam.dist as number) <= (cfg.seamBandDeg as number)) {
+  const band = effectiveSeamBandDeg(seam.prevSizeTurn, seam.nextSizeTurn, cfg.seamBandDeg as number);
+  if ((seam.dist as number) <= band) {
     // Snap the resting angle exactly onto the boundary so "on the line" is literally true:
     // the pointer comes to rest on the seam between the two slices, not merely near it.
     return { kind: "seam", between: seam.between, restAngle: seam.seam };

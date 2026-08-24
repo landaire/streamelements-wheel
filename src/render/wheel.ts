@@ -1,5 +1,5 @@
 import type { WheelConfig } from "../config/parse.js";
-import { layout, sliceCenterDeg, type SliceLayout } from "../model/geometry.js";
+import { layout, sliceCenterDeg, effectiveSeamBandDeg, type SliceLayout } from "../model/geometry.js";
 
 export interface WheelDom {
   container: HTMLElement;
@@ -129,6 +129,26 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
     line.style.strokeWidth = "2.5";
     svg.appendChild(line);
   });
+
+  // Preview overlay: a translucent wedge on each seam at the effective (small-slice-clamped)
+  // on-the-line width, so the width shown matches what resolveLanding actually treats as a
+  // seam. Drawn inside .wheel, so the bands rotate with the disc.
+  if (cfg.showSeamZone) {
+    const n = laid.length;
+    laid.forEach((l, i) => {
+      const seamA = (l.startTurn as number) * 360;
+      const prev = laid[(i - 1 + n) % n]!;
+      const band = effectiveSeamBandDeg(prev.sizeTurn, l.sizeTurn, cfg.seamBandDeg as number);
+      if (band <= 0) return;
+      const zone = doc.createElementNS(SVG_NS, "path") as SVGPathElement;
+      zone.setAttribute("class", "seam-zone");
+      zone.setAttribute("d", wedgePathD(seamA - band, seamA + band));
+      zone.setAttribute("fill", "rgba(255, 64, 64, 0.38)");
+      zone.setAttribute("stroke", "rgba(255, 32, 32, 0.7)");
+      zone.setAttribute("stroke-width", "1");
+      svg.appendChild(zone);
+    });
+  }
 
   const setRotation = (deg: number): void => {
     wheel.style.setProperty("--spin-degree", deg + "deg");

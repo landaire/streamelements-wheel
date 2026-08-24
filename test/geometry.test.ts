@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { deg, weight, sliceIndex } from "../src/model/units.js";
-import { layout, sliceCenterDeg, sliceAtAngle, nearestSeam } from "../src/model/geometry.js";
+import { layout, sliceCenterDeg, sliceAtAngle, nearestSeam, effectiveSeamBandDeg, MAX_SEAM_FRACTION } from "../src/model/geometry.js";
 import type { Slice } from "../src/config/slices.js";
 
 const mk = (weights: number[]): Slice[] =>
@@ -39,5 +39,22 @@ describe("geometry", () => {
     const s2 = nearestSeam(l, deg(358));
     expect(s2.dist as number).toBeCloseTo(2);
     expect(s2.between.map((x) => x as number)).toEqual([3, 0]);
+  });
+  it("nearestSeam reports the adjacent slice arcs", () => {
+    const l = layout(mk([1, 20])); // slice 0 tiny, slice 1 large
+    const s = nearestSeam(l, deg(0)); // seam at 0 between slice 1 and slice 0
+    expect(s.prevSizeTurn as number).toBeCloseTo(20 / 21);
+    expect(s.nextSizeTurn as number).toBeCloseTo(1 / 21);
+  });
+  it("effectiveSeamBandDeg passes the configured band through on roomy slices", () => {
+    const l = layout(mk([1, 1, 1, 1])); // 90-deg arcs; 0.35*90 = 31.5 > 5
+    const s = nearestSeam(l, deg(2));
+    expect(effectiveSeamBandDeg(s.prevSizeTurn, s.nextSizeTurn, 5)).toBeCloseTo(5);
+  });
+  it("effectiveSeamBandDeg clamps to a fraction of the smaller neighbour on thin slices", () => {
+    const l = layout(mk([1, 20]));
+    const s = nearestSeam(l, deg(0));
+    const arc0 = 360 / 21;
+    expect(effectiveSeamBandDeg(s.prevSizeTurn, s.nextSizeTurn, 100)).toBeCloseTo(MAX_SEAM_FRACTION * arc0, 5);
   });
 });
