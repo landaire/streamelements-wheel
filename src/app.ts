@@ -76,13 +76,12 @@ function globalConfigCode(): string | undefined {
   return typeof g === "string" ? g : undefined;
 }
 
-// A global config code seeds importConfig, unless the Fields panel already set one (an
-// explicit field wins).
+// A non-empty global config code (the boilerplate the streamer just pasted) is the intended
+// config, so it wins over any leftover importConfig field. An empty/absent global falls back
+// to the Fields panel's importConfig.
 function withGlobalCode(fieldData: FieldData): FieldData {
   const code = globalConfigCode();
-  if (code === undefined) return fieldData;
-  const existing = fieldData.importConfig;
-  if (typeof existing === "string" && existing.length > 0) return fieldData;
+  if (code === undefined || code.length === 0) return fieldData;
   return { ...fieldData, importConfig: code };
 }
 
