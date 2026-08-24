@@ -39,11 +39,18 @@ export interface WheelConfig {
   centerIcon: string;
   hubMode: HubMode;
   hubImage: string;
+  hubImageFill: boolean; // cover the hub out to the border vs inset with the rim showing
+  hubImageZoom: number; // scale factor >= 1 applied to the hub image
+  hubImageOffsetX: number; // object-position x, 0..100 (%)
+  hubImageOffsetY: number; // object-position y, 0..100 (%)
   hubText: string;
   hubTextStyle: HubTextStyle;
   winSound: string | undefined;
   tickSound: string | undefined;
   seamSound: string | undefined;
+  winVolume: number; // 0..1 per-sound level
+  tickVolume: number;
+  seamVolume: number;
   winSoundStyle: string; // "chime" | "cash": which synthesized win sound to use
 
   disableConfetti: boolean;
@@ -68,6 +75,8 @@ const num = (v: unknown, dflt: number): number => {
   return dflt;
 };
 const bool = (v: unknown, dflt: boolean): boolean => (typeof v === "boolean" ? v : dflt);
+// A 0..100 percent field coerced to a clamped 0..1 gain.
+const pct01 = (v: unknown, dfltPct: number): number => Math.max(0, Math.min(1, num(v, dfltPct) / 100));
 // Empty string is "no value" for optional text/sound fields; never store "".
 const opt = (v: unknown): string | undefined => (typeof v === "string" && v.length > 0 ? v : undefined);
 
@@ -168,11 +177,18 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       centerIcon: str(fieldData.centerIcon, FIELD_DEFAULTS.centerIcon as string),
       hubMode,
       hubImage: str(fieldData.hubImage, FIELD_DEFAULTS.hubImage as string),
+      hubImageFill: bool(fieldData.hubImageFill, FIELD_DEFAULTS.hubImageFill as boolean),
+      hubImageZoom: Math.max(1, Math.min(4, num(fieldData.hubImageZoom, FIELD_DEFAULTS.hubImageZoom as number) / 100)),
+      hubImageOffsetX: Math.max(0, Math.min(100, num(fieldData.hubImageOffsetX, FIELD_DEFAULTS.hubImageOffsetX as number))),
+      hubImageOffsetY: Math.max(0, Math.min(100, num(fieldData.hubImageOffsetY, FIELD_DEFAULTS.hubImageOffsetY as number))),
       hubText: str(fieldData.hubText, FIELD_DEFAULTS.hubText as string),
       hubTextStyle,
       winSound: opt(fieldData.soundWin),
       tickSound: opt(fieldData.soundTick),
       seamSound: opt(fieldData.soundSeam),
+      winVolume: pct01(fieldData.volumeWin, FIELD_DEFAULTS.volumeWin as number),
+      tickVolume: pct01(fieldData.volumeTick, FIELD_DEFAULTS.volumeTick as number),
+      seamVolume: pct01(fieldData.volumeSeam, FIELD_DEFAULTS.volumeSeam as number),
       winSoundStyle: fieldData.winSoundStyle === "cash" ? "cash" : "chime",
       disableConfetti: bool(fieldData.disableConfetti, FIELD_DEFAULTS.disableConfetti as boolean),
       normalizeWeights,

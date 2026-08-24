@@ -27,11 +27,31 @@ function mockCtx() {
 
 class MockAudio {
   url: string;
+  volume = 1;
   play = vi.fn(() => Promise.resolve());
 
   constructor(url: string) {
     this.url = url;
   }
+}
+
+// A context that hands back a fresh gain node per createGain so per-bus gains are inspectable.
+function mockCtxDistinctGains(gains: Array<{ gain: { value: number } }>) {
+  const makeGain = () => {
+    const g = { gain: { value: 1, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn() };
+    gains.push(g);
+    return g;
+  };
+  return {
+    currentTime: 0,
+    sampleRate: 44100,
+    destination: {},
+    createGain: vi.fn(makeGain),
+    createOscillator: vi.fn(() => ({ frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, type: "sine", connect: vi.fn(), start: vi.fn(), stop: vi.fn() })),
+    createBuffer: vi.fn((_ch: number, frames: number) => ({ getChannelData: () => new Float32Array(frames) })),
+    createBufferSource: vi.fn(() => ({ buffer: null as unknown, connect: vi.fn(), start: vi.fn(), stop: vi.fn() })),
+    createBiquadFilter: vi.fn(() => ({ type: "bandpass", frequency: { value: 0 }, Q: { value: 0 }, connect: vi.fn() })),
+  } as unknown as AudioContext;
 }
 
 describe("audio", () => {
@@ -97,6 +117,36 @@ describe("audio", () => {
     audio.seam();
     expect(MockAudioSpy).toHaveBeenCalledWith("https://example.com/seam.mp3");
     expect((ctx as any).createOscillator).not.toHaveBeenCalled();
+  });
+
+  it("routes each synth through a per-sound bus set to its configured volume", () => {
+    const gains: Array<{ gain: { value: number } }> = [];
+    const ctx = mockCtxDistinctGains(gains);
+    const audio = createAudio(() => ctx, { winVolume: 0.5, tickVolume: 0.25, seamVolume: 0 });
+    audio.win(); // first sound builds the context: master, then win/tick/seam buses in order
+    // gains[0] = master (0.7); gains[1..3] = win/tick/seam buses
+    expect(gains[1]!.gain.value).toBeCloseTo(0.5);
+    expect(gains[2]!.gain.value).toBeCloseTo(0.25);
+    expect(gains[3]!.gain.value).toBe(0);
+  });
+
+  it("applies per-sound volume to a URL sound via the audio element", () => {
+    const MockAudioSpy = vi.fn((url: string) => new MockAudio(url));
+    vi.stubGlobal("Audio", MockAudioSpy);
+    const ctx = mockCtx();
+    const audio = createAudio(() => ctx, { winSound: "https://example.com/win.mp3", winVolume: 0.3 });
+    audio.win();
+    const instance = MockAudioSpy.mock.results[0]?.value as InstanceType<typeof MockAudio>;
+    expect(instance.volume).toBeCloseTo(0.3);
+  });
+
+  it("defaults every sound to full volume", () => {
+    const gains: Array<{ gain: { value: number } }> = [];
+    const ctx = mockCtxDistinctGains(gains);
+    createAudio(() => ctx, {}).tick();
+    expect(gains[1]!.gain.value).toBe(1); // win bus
+    expect(gains[2]!.gain.value).toBe(1); // tick bus
+    expect(gains[3]!.gain.value).toBe(1); // seam bus
   });
 
   it("reuses audio context across multiple calls", () => {

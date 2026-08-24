@@ -76,7 +76,7 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
     opts.audioCtxFactory ?? (typeof AudioContext !== "undefined" ? () => new AudioContext() : undefined);
   const audio: AudioEngine =
     audioCtxFactory !== undefined
-      ? createAudio(audioCtxFactory, { winSound: cfg.winSound, tickSound: cfg.tickSound, seamSound: cfg.seamSound, winStyle: cfg.winSoundStyle === "cash" ? "cash" : "chime" })
+      ? createAudio(audioCtxFactory, { winSound: cfg.winSound, tickSound: cfg.tickSound, seamSound: cfg.seamSound, winStyle: cfg.winSoundStyle === "cash" ? "cash" : "chime", winVolume: cfg.winVolume, tickVolume: cfg.tickVolume, seamVolume: cfg.seamVolume })
       : { tick() {}, win() {}, seam() {} };
 
   const confetti = createConfetti(

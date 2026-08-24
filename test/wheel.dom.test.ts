@@ -132,6 +132,34 @@ describe("hub rendering", () => {
     expect(img!.src).toContain("data:image/gif");
   });
 
+  it("fills to the border and applies zoom/offset to the hub image", () => {
+    const r = parseConfig({
+      sliceEntries: "A, B",
+      hubMode: "image",
+      hubImage: "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+      hubImageFill: true,
+      hubImageZoom: 200,
+      hubImageOffsetX: 30,
+      hubImageOffsetY: 70,
+    });
+    if (r.kind !== "ok") throw new Error("bad");
+    const dom = buildWheel(document, r.value);
+    addChrome(document, dom, r.value);
+    const centerpiece = dom.container.querySelector(".centerpiece")!;
+    expect(centerpiece.classList.contains("hub-fill")).toBe(true);
+    const img = centerpiece.querySelector<HTMLImageElement>("img.hub-image")!;
+    expect(img.style.objectPosition).toBe("30% 70%");
+    expect(img.style.transform).toBe("scale(2)");
+  });
+
+  it("omits the hub-fill class when hub image fill is off", () => {
+    const r = parseConfig({ sliceEntries: "A, B", hubMode: "image", hubImage: "data:image/gif;base64,R0lGODlhAQABAAAAACw=", hubImageFill: false });
+    if (r.kind !== "ok") throw new Error("bad");
+    const dom = buildWheel(document, r.value);
+    addChrome(document, dom, r.value);
+    expect(dom.container.querySelector(".centerpiece")!.classList.contains("hub-fill")).toBe(false);
+  });
+
   it("renders hubMode text/fit with hubText content", () => {
     const r = parseConfig({ sliceEntries: "A, B", hubMode: "text", hubTextStyle: "fit", hubText: "SPIN\nTHE\nWHEEL" });
     if (r.kind !== "ok") throw new Error("bad");

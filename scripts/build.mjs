@@ -455,6 +455,43 @@ function demoHtml() {
     return kb >= 1024 ? (Math.round(kb / 102.4) / 10) + " MB" : Math.round(kb) + " KB";
   }
 
+  // Crops fully-transparent margins off an image data URL so the hub gets true content, not
+  // padding. Scans the alpha channel for the tight bounding box of visible pixels and re-exports
+  // that region as PNG. Non-transparent images (e.g. JPEG) come back unchanged.
+  function trimTransparent(dataUrl, cb) {
+    var img = new Image();
+    img.onerror = function () { cb(dataUrl, false); };
+    img.onload = function () {
+      var w = img.naturalWidth, h = img.naturalHeight;
+      if (!w || !h) { cb(dataUrl, false); return; }
+      var c = document.createElement("canvas");
+      c.width = w; c.height = h;
+      var ctx = c.getContext("2d");
+      ctx.drawImage(img, 0, 0);
+      var data;
+      try { data = ctx.getImageData(0, 0, w, h).data; } catch (e) { cb(dataUrl, false); return; }
+      var minX = w, minY = h, maxX = -1, maxY = -1;
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          if (data[(y * w + x) * 4 + 3] > 8) { // alpha above a small threshold = real content
+            if (x < minX) minX = x;
+            if (x > maxX) maxX = x;
+            if (y < minY) minY = y;
+            if (y > maxY) maxY = y;
+          }
+        }
+      }
+      if (maxX < 0) { cb(dataUrl, false); return; } // fully transparent: leave it be
+      if (minX === 0 && minY === 0 && maxX === w - 1 && maxY === h - 1) { cb(dataUrl, false); return; } // nothing to trim
+      var tw = maxX - minX + 1, th = maxY - minY + 1;
+      var c2 = document.createElement("canvas");
+      c2.width = tw; c2.height = th;
+      c2.getContext("2d").drawImage(c, minX, minY, tw, th, 0, 0, tw, th);
+      cb(c2.toDataURL("image/png"), true);
+    };
+    img.src = dataUrl;
+  }
+
   // A "Choose file..." control that reads the picked file as a base64 data URL and drops it
   // straight into the field, so users never hand-encode an image or sound. The encoded string
   // rides along in the config code like any other field value.
@@ -481,11 +518,18 @@ function demoHtml() {
       reader.onload = function () {
         var dataUrl = typeof reader.result === "string" ? reader.result : "";
         if (!dataUrl) { status.textContent = "Could not read that file."; return; }
-        targetInput.value = dataUrl;
-        status.textContent = "Embedded " + file.name + " (" + humanSize(dataUrl.length) + ")";
-        if (dataUrl.length > 1400000) status.textContent += " -- large, your config code will be big";
-        remountWheel();
-        fileInput.value = ""; // let the same file be re-picked
+        var finish = function (finalUrl, note) {
+          targetInput.value = finalUrl;
+          status.textContent = "Embedded " + file.name + " (" + humanSize(finalUrl.length) + ")" + (note || "");
+          if (finalUrl.length > 1400000) status.textContent += " -- large, your config code will be big";
+          remountWheel();
+          fileInput.value = ""; // let the same file be re-picked
+        };
+        if ((field.accept || "").indexOf("image/") === 0) {
+          trimTransparent(dataUrl, function (url, didTrim) { finish(url, didTrim ? ", trimmed transparent edges" : ""); });
+        } else {
+          finish(dataUrl, "");
+        }
       };
       reader.readAsDataURL(file);
     });
@@ -501,6 +545,16 @@ function demoHtml() {
     row.className = "f-row";
     var input;
     var initVal = initialValue(field);
+
+    // Hidden fields keep a value in the config but show no control (driven by another
+    // affordance, e.g. dragging the hub image). Register a detached input and stop.
+    if (field.hidden) {
+      var hinput = document.createElement("input");
+      hinput.type = "hidden";
+      hinput.value = initVal === undefined ? "" : String(initVal);
+      controls[field.key] = { field: field, el: hinput, row: null };
+      return;
+    }
 
     if (field.type === "checkbox") {
       row.className += " f-row-inline";
@@ -969,12 +1023,64 @@ function demoHtml() {
     }
   }
 
+  // Drag the hub image in the preview to pan it. Panning is expressed as object-position, so
+  // the image always covers the hub (no gaps); the drag delta is scaled by how far the image
+  // overflows the hub at the current zoom. Committed to the hidden offset fields on release.
+  function attachHubDrag() {
+    var img = document.querySelector(".centerpiece .hub-image");
+    var wrap = document.querySelector(".centerpiece .hub-image-wrap");
+    if (!img || !wrap || !controls.hubImageOffsetX || !controls.hubImageOffsetY) return;
+    img.style.cursor = "grab";
+    img.style.touchAction = "none";
+    img.style.pointerEvents = "auto"; // .details is pointer-events:none; opt the image back in to drag
+    var dragging = false, startX = 0, startY = 0, startPX = 50, startPY = 50, curPX = 50, curPY = 50, ovX = 0, ovY = 0, moved = false;
+    function move(e) {
+      if (!dragging) return;
+      var dx = e.clientX - startX, dy = e.clientY - startY;
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+      if (ovX > 1) curPX = Math.max(0, Math.min(100, startPX - (dx / ovX) * 100));
+      if (ovY > 1) curPY = Math.max(0, Math.min(100, startPY - (dy / ovY) * 100));
+      img.style.objectPosition = curPX + "% " + curPY + "%";
+    }
+    function end() {
+      if (!dragging) return;
+      dragging = false;
+      img.style.cursor = "grab";
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", end);
+      if (moved) {
+        controls.hubImageOffsetX.el.value = String(Math.round(curPX));
+        controls.hubImageOffsetY.el.value = String(Math.round(curPY));
+        remountWheel();
+      }
+    }
+    img.addEventListener("pointerdown", function (e) {
+      e.preventDefault();
+      e.stopPropagation(); // a hub drag must not also trigger click-to-spin on the wheel
+      var rect = wrap.getBoundingClientRect();
+      var natW = img.naturalWidth || 1, natH = img.naturalHeight || 1;
+      var zoom = Number(controls.hubImageZoom ? controls.hubImageZoom.el.value : 100) / 100;
+      var cover = Math.max(rect.width / natW, rect.height / natH);
+      ovX = natW * cover * zoom - rect.width;
+      ovY = natH * cover * zoom - rect.height;
+      startX = e.clientX; startY = e.clientY;
+      startPX = curPX = Number(controls.hubImageOffsetX.el.value) || 50;
+      startPY = curPY = Number(controls.hubImageOffsetY.el.value) || 50;
+      dragging = true; moved = false;
+      img.style.cursor = "grabbing";
+      window.addEventListener("pointermove", move);
+      window.addEventListener("pointerup", end);
+    });
+    img.addEventListener("click", function (e) { e.stopPropagation(); });
+  }
+
   function remountWheel() {
     document.querySelectorAll(".wheel-container, .wheel-error").forEach(function (e) { e.remove(); });
     syncSliceFieldFromItems();
     var fieldData = collectFieldData();
     var result = window.Wheel.mountWidget(document, { fieldData: fieldData });
     currentHandle = result && "spin" in result ? result : null;
+    attachHubDrag();
     renderWeights(fieldData);
     syncHash(fieldData);
     updateShareBar();

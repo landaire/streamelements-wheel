@@ -15,6 +15,8 @@ export interface FieldDef {
   hint?: string; // optional subtext shown under the control in the demo playground
   accept?: string; // playground only: file-input accept filter; presence adds a "Choose file"
   // button that encodes the picked file to a base64 data URL. Not serialized to fields.json.
+  hidden?: boolean; // playground only: keep the value in the config but render no visible control
+  // (driven by another affordance, e.g. dragging the hub image). Still emitted to fields.json.
 }
 
 export const FIELD_DEFS: readonly FieldDef[] = [
@@ -72,6 +74,10 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "colorEntry", type: "colorpicker", label: "Label text", value: "#ffffff", group: "Colors" },
   { key: "hubMode", type: "dropdown", label: "Hub content", value: "icon", options: { icon: "Icon", image: "Image", text: "Text" }, group: "Center Hub" },
   { key: "hubImage", type: "text", label: "Hub image URL", value: "", group: "Center Hub", accept: "image/*", hint: "Pick a file to embed it, or paste an image URL or a base64 data URL. Shown when Hub content = Image." },
+  { key: "hubImageFill", type: "checkbox", label: "Fill hub to the border", value: true, group: "Center Hub", hint: "Cover the whole hub out to the rim. Off insets the image so the knob rim shows around it." },
+  { key: "hubImageZoom", type: "slider", label: "Hub image zoom", value: 100, min: 100, max: 400, step: 5, group: "Center Hub", hint: "Zoom the hub image. Drag the image on the wheel preview to reposition it." },
+  { key: "hubImageOffsetX", type: "number", label: "Hub image offset X", value: 50, group: "Center Hub", hidden: true },
+  { key: "hubImageOffsetY", type: "number", label: "Hub image offset Y", value: 50, group: "Center Hub", hidden: true },
   { key: "hubText", type: "text", label: "Hub text", value: "", group: "Center Hub" },
   { key: "hubTextStyle", type: "dropdown", label: "Hub text style", value: "fit", options: { fit: "Fit (block)", curve: "Curved" }, group: "Center Hub" },
   { key: "disableConfetti", type: "checkbox", label: "Disable confetti", value: false, group: "Confetti" },
@@ -79,6 +85,9 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "soundWin", type: "sound-input", label: "Win sound", value: "", group: "Sounds", accept: "audio/*", hint: "Overrides the built-in win sound. Pick a file to embed it, or paste a normal URL or a base64 data URL. Leave blank for the built-in." },
   { key: "soundTick", type: "sound-input", label: "Tick sound", value: "", group: "Sounds", accept: "audio/*", hint: "Overrides the built-in tick. Pick a file to embed it, or paste a normal URL or a base64 data URL. Leave blank for the built-in." },
   { key: "soundSeam", type: "sound-input", label: "On-the-line sound", value: "", group: "Sounds", accept: "audio/*", hint: "Plays on a seam landing (magnetism off). Pick a file to embed it, or paste a normal URL or a base64 data URL. Leave blank for the built-in." },
+  { key: "volumeWin", type: "slider", label: "Win volume", value: 100, min: 0, max: 100, step: 5, group: "Sounds", hint: "Level of the win sound (built-in or your file)." },
+  { key: "volumeTick", type: "slider", label: "Tick volume", value: 100, min: 0, max: 100, step: 5, group: "Sounds", hint: "Level of the per-slice tick." },
+  { key: "volumeSeam", type: "slider", label: "On-the-line volume", value: 100, min: 0, max: 100, step: 5, group: "Sounds", hint: "Level of the on-the-line sound." },
   { key: "disableSound", type: "checkbox", label: "Mute all sounds", value: false, group: "Sounds" },
   { key: "disableTickSound", type: "checkbox", label: "Disable tick sound", value: false, group: "Sounds" },
   { key: "enableCommands", type: "checkbox", label: "Enable chat commands", value: true, group: "Commands" },

@@ -250,14 +250,17 @@ function buildEmeraldPointer(doc: Document): SVGElement {
 
 function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): void {
   if (cfg.hubMode === "image") {
-    // Inset the image into the centerpiece rather than covering it: the surrounding
-    // ring keeps the knob's bevel/rim visible, and a gloss overlay sits on top of the
-    // image itself so it still reads as a physical glossy button, not a flat photo.
+    // Fill mode covers the hub out to the rim; inset mode keeps the knob's bevel/rim visible
+    // around the image. A gloss overlay sits on top either way so it still reads as a glossy
+    // button. Zoom and offset let the streamer frame the image without leaving the disc.
+    if (cfg.hubImageFill) centerpiece.classList.add("hub-fill");
     const imgWrap = el(doc, "hub-image-wrap");
     const img = doc.createElement("img");
     img.className = "hub-image";
     img.src = cfg.hubImage;
     img.alt = "";
+    img.style.objectPosition = cfg.hubImageOffsetX + "% " + cfg.hubImageOffsetY + "%";
+    img.style.transform = "scale(" + cfg.hubImageZoom + ")";
     imgWrap.appendChild(img);
     centerpiece.appendChild(imgWrap);
     centerpiece.appendChild(el(doc, "hub-image-gloss"));

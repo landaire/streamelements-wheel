@@ -24,6 +24,37 @@ describe("parseConfig", () => {
       expect(r.value.seamBandDeg as number).toBe(5);
     }
   });
+  it("defaults per-sound volumes to full (1) and maps percentages to 0..1", () => {
+    const d = parseConfig({ ...base });
+    expect(d.kind).toBe("ok");
+    if (d.kind === "ok") {
+      expect(d.value.winVolume).toBe(1);
+      expect(d.value.tickVolume).toBe(1);
+      expect(d.value.seamVolume).toBe(1);
+    }
+    const r = parseConfig({ ...base, volumeWin: 50, volumeTick: 0, volumeSeam: 200 });
+    if (r.kind === "ok") {
+      expect(r.value.winVolume).toBeCloseTo(0.5);
+      expect(r.value.tickVolume).toBe(0);
+      expect(r.value.seamVolume).toBe(1); // clamped
+    }
+  });
+  it("defaults hub image framing and clamps zoom/offset", () => {
+    const d = parseConfig({ ...base });
+    if (d.kind === "ok") {
+      expect(d.value.hubImageFill).toBe(true);
+      expect(d.value.hubImageZoom).toBe(1);
+      expect(d.value.hubImageOffsetX).toBe(50);
+      expect(d.value.hubImageOffsetY).toBe(50);
+    }
+    const r = parseConfig({ ...base, hubImageFill: false, hubImageZoom: 250, hubImageOffsetX: -20, hubImageOffsetY: 140 });
+    if (r.kind === "ok") {
+      expect(r.value.hubImageFill).toBe(false);
+      expect(r.value.hubImageZoom).toBeCloseTo(2.5);
+      expect(r.value.hubImageOffsetX).toBe(0); // clamped
+      expect(r.value.hubImageOffsetY).toBe(100); // clamped
+    }
+  });
   it("empty sound field becomes undefined, not empty string", () => {
     const r = parseConfig({ ...base, soundWin: "" });
     expect(r.kind).toBe("ok");
