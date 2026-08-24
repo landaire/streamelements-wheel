@@ -1,3 +1,5 @@
+import { KACHING_DATA_URL } from "./kaching-data.js";
+
 export interface AudioEngine {
   tick(): void;
   win(): void;
@@ -120,35 +122,6 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: AudioConfig): A
     });
   };
 
-  // "cha-CHING": the classic register bell. Two quick bright broadband hits (cha, then
-  // ching) a fifth of a second apart, and on the ching a rich metallic bell rings out for
-  // ~1.6s -- a ~1250 Hz fundamental with bright partials up to ~8 kHz, matching a real
-  // cash-register ring. Money.
-  const cashRegisterSynth = (): void => {
-    // Struck-bell voice: a quiet fundamental for body and bright upper partials, with the
-    // loudest partial near 2.9x (so a ~1245 Hz bell rings brightest around ~3600 Hz, like the
-    // reference) rather than sounding deep.
-    const bell = (atSec: number, base: number, gain: number, decaySec: number): void => {
-      const partials: [number, number][] = [
-        [1, 0.32],
-        [2.0, 0.55],
-        [2.9, 1.0],
-        [3.9, 0.62],
-        [5.2, 0.35],
-        [6.8, 0.18],
-      ];
-      for (const [ratio, g] of partials) {
-        tone({ freq: base * ratio, type: "sine", peak: gain * g, attackSec: 0.001, decaySec: decaySec * (ratio <= 4 ? 0.9 : 0.5), atSec });
-      }
-    };
-    // cha: a short bright hit (broadband click + a quick bell)
-    noise({ durSec: 0.035, filterHz: 3200, q: 0.5, peak: 0.13, atSec: 0 });
-    bell(0.0, 1050, 0.09, 0.22);
-    // CHING: a second bright hit and the long ringing bell
-    noise({ durSec: 0.05, filterHz: 3600, q: 0.5, peak: 0.14, atSec: 0.16 });
-    bell(0.16, 1245, 0.14, 1.6);
-  };
-
   // On-the-line chime: same impact-plus-ring shape as the win, but a suspended C-F-G cluster
   // struck together (no clear major resolution) so it reads as neutral suspense, not a win
   // and not a fail buzzer -- matching the original's ambiguous sustained bell.
@@ -166,7 +139,7 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: AudioConfig): A
     tick: () => (cfg.tickSound !== undefined ? playUrl(cfg.tickSound) : tickSynth()),
     win: () => {
       if (cfg.winSound !== undefined) return playUrl(cfg.winSound);
-      return cfg.winStyle === "cash" ? cashRegisterSynth() : winSynth();
+      return cfg.winStyle === "cash" ? playUrl(KACHING_DATA_URL) : winSynth();
     },
     seam: () => (cfg.seamSound !== undefined ? playUrl(cfg.seamSound) : seamSynth()),
   };

@@ -70,12 +70,15 @@ describe("audio", () => {
     expect((ctx as any).createOscillator).not.toHaveBeenCalled();
   });
 
-  it("win synthesizes the cash-register style when winStyle is cash (no URL)", () => {
+  it("win plays the embedded ka-ching (via Audio) when winStyle is cash and no URL", () => {
+    const MockAudioSpy = vi.fn((url: string) => new MockAudio(url));
+    vi.stubGlobal("Audio", MockAudioSpy);
     const ctx = mockCtx();
     const audio = createAudio(() => ctx, { winStyle: "cash" });
     audio.win();
-    expect((ctx as any).createOscillator).toHaveBeenCalled();
-    expect((ctx as any)._osc.start).toHaveBeenCalled();
+    expect(MockAudioSpy).toHaveBeenCalled();
+    expect(String(MockAudioSpy.mock.calls[0]?.[0])).toMatch(/^data:audio\/mpeg;base64,/);
+    expect((ctx as any).createOscillator).not.toHaveBeenCalled();
   });
 
   it("seam synthesizes a chime when no seam sound is configured", () => {
