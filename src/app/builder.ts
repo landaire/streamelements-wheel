@@ -5,6 +5,7 @@ import { createAnimator } from "../spin/animator.js";
 import { createAudio, type AudioEngine } from "../audio/engine.js";
 import { createConfetti } from "../fx/confetti.js";
 import { consoleAnnounceSink } from "../se/sinks.js";
+import { combineLabels } from "../model/combine.js";
 import type { Rng } from "../model/spin.js";
 
 // Default confetti palette; configurable in a later phase.
@@ -105,11 +106,11 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
           if (!cfg.disableSound) audio.win();
           if (!cfg.disableConfetti) confetti.fire();
         } else if (cfg.seamResult === "both") {
-          // On the line counts as both adjacent slices winning: both in quotes, joined by
-          // the configurable join text, then celebrate.
+          // On the line counts as both adjacent slices winning. Either sum matching numbered
+          // groups, or show both quoted and joined by the configurable text. Then celebrate.
           const a = cfg.slices[result.between[0] as number]!.text;
           const bText = cfg.slices[result.between[1] as number]!.text;
-          announce.winner('"' + a + '"' + cfg.seamJoinText + '"' + bText + '"');
+          announce.winner(cfg.seamCombine ? combineLabels(a, bText) : '"' + a + '"' + cfg.seamJoinText + '"' + bText + '"');
           if (!cfg.disableSound) audio.win();
           if (!cfg.disableConfetti) confetti.fire();
         } else {

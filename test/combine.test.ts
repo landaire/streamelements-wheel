@@ -1,0 +1,29 @@
+import { describe, it, expect } from "vitest";
+import { combineLabels } from "../src/model/combine.js";
+
+describe("combineLabels", () => {
+  it("sums a currency amount and counts a repeated name", () => {
+    expect(combineLabels("$10 + Spin", "$20 + Spin")).toBe("$30 + 2 Spin");
+  });
+
+  it("counts a bare name as one and keeps 1 unlabelled", () => {
+    expect(combineLabels("Spin", "Spin")).toBe("2 Spin");
+    expect(combineLabels("Spin", "$5")).toBe("Spin + $5");
+  });
+
+  it("adds explicit counts and matches by name case-insensitively", () => {
+    expect(combineLabels("2 Spin", "3 spin")).toBe("5 Spin");
+  });
+
+  it("sums matching currency prefixes and preserves order of first appearance", () => {
+    expect(combineLabels("$10 + 100 pts", "$5 + 50 pts")).toBe("$15 + 150 pts");
+  });
+
+  it("keeps non-matching terms side by side", () => {
+    expect(combineLabels("Pizza", "Tacos")).toBe("Pizza + Tacos");
+  });
+
+  it("handles decimals and trims float noise", () => {
+    expect(combineLabels("$10.10", "$20.20")).toBe("$30.3");
+  });
+});
