@@ -16,7 +16,10 @@ export function isBroadcasterOrMod(data: ChatEventData, broadcasterUsername: str
 
 function isBroadcaster(data: ChatEventData, broadcasterUsername: string | undefined): boolean {
   const nick = (data.nick ?? data.displayName ?? "").toLowerCase();
-  return nick.length > 0 && nick === (broadcasterUsername ?? "").toLowerCase();
+  if (nick.length > 0 && nick === (broadcasterUsername ?? "").toLowerCase()) return true;
+  // Fallback: a broadcaster badge/flag, so the broadcaster is recognized even when the
+  // channel username is unknown (e.g. a mount that missed onWidgetLoad) or the nick differs.
+  return /broadcaster/.test(String(data.tags?.badges ?? "")) || Boolean(data.badges && data.badges.broadcaster);
 }
 
 export function hasCommandPermission(

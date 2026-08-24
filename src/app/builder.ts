@@ -124,6 +124,11 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
     initialRotationDeg,
   );
 
+  // Click the wheel to spin it (in addition to chat commands / the demo button). The
+  // animator's own guard ignores clicks while a spin is running.
+  dom.container.style.cursor = "pointer";
+  dom.container.addEventListener("click", () => animator.spin());
+
   return {
     container: dom.container,
     spin: () => animator.spin(),

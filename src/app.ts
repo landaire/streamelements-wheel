@@ -131,8 +131,7 @@ if (typeof document !== "undefined" && globalConfigCode() !== undefined) {
     if (hasSEApi()) {
       mountController({ fieldData: { importConfig } });
     } else {
-      const handle = mountWidget(document, { fieldData: { importConfig } });
-      if ("spin" in handle) document.body.addEventListener("click", () => handle.spin());
+      mountWidget(document, { fieldData: { importConfig } }); // click-to-spin is on the wheel itself
     }
   };
   // In SE, give onWidgetLoad a moment to arrive first; standalone can mount immediately.
