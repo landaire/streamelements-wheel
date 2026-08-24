@@ -6,6 +6,9 @@ export type Rng = () => number;
 export interface LandingConfig {
   magnetism: boolean;
   seamBandDeg: Degrees;
+  // On a seam landing: false (default) leaves the wheel where it actually stopped and only the
+  // result counts as on-the-line; true glides it onto the exact divider line.
+  seamSnap?: boolean;
 }
 
 export type SpinResult =
@@ -72,9 +75,9 @@ export function resolveLanding(
   const seam = nearestSeam(layout, restAngle);
   const band = effectiveSeamBandDeg(seam.prevSizeTurn, seam.nextSizeTurn, cfg.seamBandDeg as number);
   if ((seam.dist as number) <= band) {
-    // Snap the resting angle exactly onto the boundary so "on the line" is literally true:
-    // the pointer comes to rest on the seam between the two slices, not merely near it.
-    return { kind: "seam", between: seam.between, restAngle: seam.seam };
+    // Both adjacent slices win. By default the wheel rests where it actually landed (a natural
+    // stop just inside a slice); seamSnap instead glides it onto the exact boundary line.
+    return { kind: "seam", between: seam.between, restAngle: cfg.seamSnap ? seam.seam : normalizeDeg(restAngle) };
   }
   return { kind: "winner", slice, restAngle: normalizeDeg(restAngle) };
 }

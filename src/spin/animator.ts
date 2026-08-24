@@ -112,7 +112,7 @@ export function createAnimator(
     // Resolve the landing BEFORE animating: with magnetism on, result.restAngle is the
     // snapped slice center, and the animation must target that, not the raw rest angle.
     const restAngle = pickRestAngle(rng);
-    const result = resolveLanding(laid, restAngle, { magnetism: cfg.magnetism, seamBandDeg: cfg.seamBandDeg });
+    const result = resolveLanding(laid, restAngle, { magnetism: cfg.magnetism, seamBandDeg: cfg.seamBandDeg, seamSnap: cfg.seamSnap });
     // A random per-spin force varies momentum and the deceleration curve within a fixed
     // duration, so some spins keep going longer before they stop.
     const force = pickForce(rng, cfg.spinForceVariance);

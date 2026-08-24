@@ -29,13 +29,21 @@ describe("spin resolution", () => {
     }
   });
 
-  it("magnetism off: an angle inside the seam band yields no winner, snapped onto the boundary", () => {
+  it("magnetism off: an angle inside the seam band yields a seam result, resting where it landed by default", () => {
     const r = resolveLanding(l, deg(89), { magnetism: false, seamBandDeg: deg(3) });
     expect(r.kind).toBe("seam");
     if (r.kind === "seam") {
       expect(r.between.map((x) => x as number)).toEqual([0, 1]);
-      // rests exactly on the 90deg boundary between slice 0 and 1, not at the raw 89deg
-      expect(r.restAngle as number).toBeCloseTo(90);
+      expect(r.restAngle as number).toBeCloseTo(89); // natural stop, not snapped to the 90 boundary
+    }
+  });
+
+  it("magnetism off: seamSnap glides the seam landing onto the exact boundary", () => {
+    const r = resolveLanding(l, deg(89), { magnetism: false, seamBandDeg: deg(3), seamSnap: true });
+    expect(r.kind).toBe("seam");
+    if (r.kind === "seam") {
+      expect(r.between.map((x) => x as number)).toEqual([0, 1]);
+      expect(r.restAngle as number).toBeCloseTo(90); // snapped onto the divider
     }
   });
 
