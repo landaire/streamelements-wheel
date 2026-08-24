@@ -222,18 +222,6 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     }
     defs.appendChild(grad);
   }
-  // Soft blur for the white halo behind the gem; a generous filter region so the
-  // blur is not clipped at the element's own bounding box.
-  const glowFilter = doc.createElementNS(SVG_NS, "filter");
-  glowFilter.setAttribute("id", "glow-" + uid);
-  glowFilter.setAttribute("x", "-60%");
-  glowFilter.setAttribute("y", "-60%");
-  glowFilter.setAttribute("width", "220%");
-  glowFilter.setAttribute("height", "220%");
-  const blur = doc.createElementNS(SVG_NS, "feGaussianBlur");
-  blur.setAttribute("stdDeviation", "6");
-  glowFilter.appendChild(blur);
-  defs.appendChild(glowFilter);
   svg.appendChild(defs);
 
   const poly = (points: string, fill: string, extra?: Record<string, string>): void => {
@@ -244,12 +232,10 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     svg.appendChild(p);
   };
 
-  // Overall gem silhouette (bezel top through the tip), used for the white halo below.
+  // A single crisp, slightly larger white copy of the gem silhouette sits behind it as a
+  // plain white outline (no blur/glow).
   const silhouette = "30,0 70,0 76,20 94,56 50,138 6,56 24,20";
-  // Blurred, slightly larger white copy of the silhouette sits behind everything as a
-  // soft glow; a crisp unblurred copy on top of it gives a clean white outline edge.
-  poly(silhouette, "#ffffff", { filter: `url(#glow-${uid})`, transform: "translate(50 60) scale(1.28) translate(-50 -60)" });
-  poly(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.1) translate(-50 -60)" });
+  poly(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.12) translate(-50 -60)" });
 
   // Bezel where the gem mounts to the rim edge.
   poly("30,0 70,0 76,20 24,20", `url(#bezel-${uid})`);

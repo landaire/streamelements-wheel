@@ -76,8 +76,8 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
   rimInnerEdge.setAttribute("cy", String(CY));
   rimInnerEdge.setAttribute("r", String(RIM_CENTER_R - RIM_THICKNESS / 2));
   rimInnerEdge.setAttribute("fill", "none");
-  rimInnerEdge.style.stroke = "rgba(0, 0, 0, 0.35)";
-  rimInnerEdge.style.strokeWidth = "2";
+  rimInnerEdge.style.stroke = "rgba(0, 0, 0, 0.5)";
+  rimInnerEdge.style.strokeWidth = "3.5";
   rimSvg.appendChild(rimInnerEdge);
 
   wheelClip.appendChild(wheel);
@@ -111,7 +111,7 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
     // from sliceColor) so borders stay a single consistent color across the wheel.
     if (bordered) {
       path.style.stroke = "var(--slice-border, #c76b7d)";
-      path.style.strokeWidth = "1.5";
+      path.style.strokeWidth = "3";
       path.style.strokeLinejoin = "round";
     }
     svg.appendChild(path);

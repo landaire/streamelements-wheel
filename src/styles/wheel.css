@@ -2,6 +2,7 @@
   position: relative;
   width: calc(500px * var(--scale, 1));
   height: calc(500px * var(--scale, 1));
+  font-family: var(--wheel-font, "Nunito"), "Segoe UI", system-ui, sans-serif;
 }
 /* Non-rotating wrapper: any clip (e.g. halfwheel) goes here, never on .wheel itself,
    or the clip would spin with the disc. */
@@ -106,11 +107,13 @@
   pointer-events: none;
 }
 .entry-text {
-  margin-top: 12%;
-  max-width: 34%;
+  /* Places the label near the radial middle of the wedge (was hugging the rim). */
+  margin-top: 21%;
+  max-width: 30%;
   text-align: center;
   color: var(--entry-color, #fff);
   font-size: var(--entry-font-size, 15px);
+  font-weight: 700;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   transform: rotate(90deg);
 }
