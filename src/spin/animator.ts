@@ -103,6 +103,12 @@ export function createAnimator(
     dom.wheel.style.setProperty("--spin-windup", windup + "deg");
     dom.wheel.style.setProperty("--spin-to", to + "deg");
     dom.wheel.style.setProperty("--spin-duration", cfg.spinDurationSec + "s");
+    // Clear the prior animation and flush it, so re-selecting the same keyframe name still
+    // restarts the animation. Without this, two consecutive spins that pick the same force
+    // bucket leave animation-name unchanged and the CSS animation never replays -- the wheel
+    // just snaps to the final angle and appears to stay in place.
+    dom.wheel.style.animationName = "none";
+    void dom.wheel.offsetHeight;
     // Select the deceleration curve by force; the timing function is baked into the named
     // keyframe rule because a per-keyframe timing function cannot read a CSS var.
     dom.wheel.style.animationName = "wheel-spin-" + forceBucket(force);
