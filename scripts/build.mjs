@@ -198,7 +198,9 @@ function demoHtml() {
   }
   .f-row input[type="text"] { font-family: "Courier New", Courier, monospace; }
   .f-row input[type="checkbox"] { width: 16px; height: 16px; }
-  .f-row input[type="color"] { width: 100%; height: 32px; border: 1px solid #4a4760; border-radius: 5px; background: #2a2836; padding: 2px; }
+  .f-color-wrap { display: flex; gap: 8px; align-items: center; }
+  .f-color-wrap input[type="color"] { width: 46px; height: 32px; flex: 0 0 auto; border: 1px solid #4a4760; border-radius: 5px; background: #2a2836; padding: 2px; }
+  .f-color-wrap input.f-hex { flex: 1 1 auto; text-transform: lowercase; }
   .f-slider-wrap { display: flex; align-items: center; gap: 10px; }
   .f-slider-wrap input[type="range"] { flex: 1; }
   .f-slider-val { font-family: "Courier New", Courier, monospace; font-size: 12px; color: #cfcde0; min-width: 3.5em; text-align: right; }
@@ -419,11 +421,32 @@ function demoHtml() {
       row.appendChild(sliderWrap);
     } else if (field.type === "colorpicker") {
       row.appendChild(makeLabel(field.label));
+      var colorWrap = document.createElement("div");
+      colorWrap.className = "f-color-wrap";
       input = document.createElement("input");
       input.type = "color";
       input.value = typeof initVal === "string" && initVal ? initVal : "#ffffff";
-      input.addEventListener("input", function () { scheduleRemount(250); });
-      row.appendChild(input);
+      var hex = document.createElement("input");
+      hex.type = "text";
+      hex.className = "f-hex";
+      hex.value = input.value;
+      hex.spellcheck = false;
+      hex.maxLength = 7;
+      // Color swatch and hex text stay in sync; typing a valid #rgb or #rrggbb updates the swatch.
+      input.addEventListener("input", function () { hex.value = input.value; scheduleRemount(250); });
+      hex.addEventListener("input", function () {
+        var v = hex.value.trim();
+        if (v[0] !== "#") v = "#" + v;
+        var m = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/.exec(v);
+        if (!m) return;
+        var h = m[1];
+        if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+        input.value = "#" + h.toLowerCase();
+        scheduleRemount(250);
+      });
+      colorWrap.appendChild(input);
+      colorWrap.appendChild(hex);
+      row.appendChild(colorWrap);
     } else if (field.type === "number") {
       row.appendChild(makeLabel(field.label));
       input = document.createElement("input");
