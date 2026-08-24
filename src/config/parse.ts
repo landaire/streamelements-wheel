@@ -35,6 +35,7 @@ export interface WheelConfig {
   hubTextStyle: HubTextStyle;
   winSound: string | undefined;
   tickSound: string | undefined;
+  seamSound: string | undefined;
   disableConfetti: boolean;
   normalizeWeights: boolean;
   disableSound: boolean;
@@ -148,6 +149,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       hubTextStyle,
       winSound: opt(fieldData.soundWin),
       tickSound: opt(fieldData.soundTick),
+      seamSound: opt(fieldData.soundSeam),
       disableConfetti: bool(fieldData.disableConfetti, FIELD_DEFAULTS.disableConfetti as boolean),
       normalizeWeights,
       disableSound: bool(fieldData.disableSound, FIELD_DEFAULTS.disableSound as boolean),

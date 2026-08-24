@@ -75,8 +75,8 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
     opts.audioCtxFactory ?? (typeof AudioContext !== "undefined" ? () => new AudioContext() : undefined);
   const audio: AudioEngine =
     audioCtxFactory !== undefined
-      ? createAudio(audioCtxFactory, { winSound: cfg.winSound })
-      : { tick() {}, win() {} };
+      ? createAudio(audioCtxFactory, { winSound: cfg.winSound, tickSound: cfg.tickSound, seamSound: cfg.seamSound })
+      : { tick() {}, win() {}, seam() {} };
 
   const confetti = createConfetti(
     canvas,
@@ -101,6 +101,7 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
           if (!cfg.disableConfetti) confetti.fire();
         } else {
           announce.seam();
+          if (!cfg.disableSound) audio.seam();
         }
         opts.onSettle?.();
       },

@@ -2,13 +2,25 @@ import { describe, it, expect, vi, afterEach } from "vitest";
 import { createAudio } from "../src/audio/engine.js";
 
 function mockCtx() {
-  const gainNode = { gain: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn() };
-  const osc = { frequency: { setValueAtTime: vi.fn() }, type: "sine", connect: vi.fn(), start: vi.fn(), stop: vi.fn() };
+  const gainNode = { gain: { value: 0, setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() }, connect: vi.fn() };
+  const osc = {
+    frequency: { setValueAtTime: vi.fn(), exponentialRampToValueAtTime: vi.fn() },
+    type: "sine",
+    connect: vi.fn(),
+    start: vi.fn(),
+    stop: vi.fn(),
+  };
+  const bufferSource = { buffer: null as unknown, connect: vi.fn(), start: vi.fn(), stop: vi.fn() };
+  const filter = { type: "bandpass", frequency: { value: 0 }, Q: { value: 0 }, connect: vi.fn() };
   return {
     currentTime: 0,
+    sampleRate: 44100,
     destination: {},
     createGain: vi.fn(() => gainNode),
     createOscillator: vi.fn(() => osc),
+    createBuffer: vi.fn((_ch: number, frames: number) => ({ getChannelData: () => new Float32Array(frames) })),
+    createBufferSource: vi.fn(() => bufferSource),
+    createBiquadFilter: vi.fn(() => filter),
     _osc: osc,
   } as unknown as AudioContext & { _osc: typeof osc };
 }
@@ -55,6 +67,24 @@ describe("audio", () => {
     if (instance) {
       expect(instance.play).toHaveBeenCalled();
     }
+    expect((ctx as any).createOscillator).not.toHaveBeenCalled();
+  });
+
+  it("seam synthesizes a chime when no seam sound is configured", () => {
+    const ctx = mockCtx();
+    const audio = createAudio(() => ctx, {});
+    audio.seam();
+    expect((ctx as any).createOscillator).toHaveBeenCalled();
+    expect((ctx as any)._osc.start).toHaveBeenCalled();
+  });
+
+  it("seam plays an audio file when a seam sound is configured", () => {
+    const MockAudioSpy = vi.fn((url: string) => new MockAudio(url));
+    vi.stubGlobal("Audio", MockAudioSpy);
+    const ctx = mockCtx();
+    const audio = createAudio(() => ctx, { seamSound: "https://example.com/seam.mp3" });
+    audio.seam();
+    expect(MockAudioSpy).toHaveBeenCalledWith("https://example.com/seam.mp3");
     expect((ctx as any).createOscillator).not.toHaveBeenCalled();
   });
 
