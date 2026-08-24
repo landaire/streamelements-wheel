@@ -51,9 +51,24 @@ function formatNumber(n: number): string {
   return String(Math.round(n * 100) / 100);
 }
 
+// Regular English pluralization of the last word, covering the common cases. Leaves the rest
+// of the name untouched (e.g. "Free spin" -> "Free spins").
+function pluralizeWord(word: string): string {
+  const lower = word.toLowerCase();
+  if (/s$/.test(lower)) return word; // already ends in s (plural or abbrev like "pts"): leave it
+  if (/(?:x|z|ch|sh)$/.test(lower)) return word + "es";
+  if (/[^aeiou]y$/.test(lower)) return word.slice(0, -1) + "ies";
+  return word + "s";
+}
+function pluralize(name: string): string {
+  const parts = name.split(" ");
+  parts[parts.length - 1] = pluralizeWord(parts[parts.length - 1]!);
+  return parts.join(" ");
+}
+
 function formatTerm(t: Term): string {
   if (t.kind === "currency") return t.prefix + formatNumber(t.value);
-  return t.value === 1 ? t.name : formatNumber(t.value) + " " + t.name;
+  return t.value === 1 ? t.name : formatNumber(t.value) + " " + pluralize(t.name);
 }
 
 export function combineLabels(a: string, b: string): string {
