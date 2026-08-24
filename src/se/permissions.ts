@@ -1,25 +1,51 @@
 import type { ChatEventData } from "./types.js";
 import type { CommandPermission } from "../config/parse.js";
 
-// Broadcaster identity is inferred by nick match (SE does not send a broadcaster flag
-// directly); mod status comes from tags.mod or a broadcaster/moderator badge, checked
-// across the couple of shapes SE has used for badges.
-export function isBroadcasterOrMod(data: ChatEventData, broadcasterUsername: string | undefined): boolean {
-  const nick = (data.nick ?? data.displayName ?? "").toLowerCase();
-  const isBroadcaster = nick.length > 0 && nick === (broadcasterUsername ?? "").toLowerCase();
-  const isMod =
-    data.tags?.mod === "1" ||
-    /broadcaster|moderator/.test(String(data.tags?.badges ?? "")) ||
-    Boolean(data.badges && (data.badges.broadcaster || data.badges.moderator));
-  return isBroadcaster || isMod;
+// The set of Twitch badge names on a chat message, gathered from however SE delivers them:
+// an array of { type }, an object map keyed by badge name, and/or the raw IRC "badges" tag
+// ("broadcaster/1,subscriber/12,...").
+function badgeNames(data: ChatEventData): Set<string> {
+  const names = new Set<string>();
+  const badges = data.badges;
+  if (Array.isArray(badges)) {
+    for (const badge of badges) {
+      const type = badge && typeof badge === "object" ? (badge as { type?: unknown }).type : badge;
+      if (typeof type === "string" && type.length > 0) names.add(type.toLowerCase());
+    }
+  } else if (badges && typeof badges === "object") {
+    for (const key of Object.keys(badges)) {
+      if ((badges as Record<string, unknown>)[key]) names.add(key.toLowerCase());
+    }
+  }
+  const rawBadges = data.tags?.badges;
+  if (typeof rawBadges === "string") {
+    for (const segment of rawBadges.split(",")) {
+      const name = segment.split("/")[0];
+      if (name) names.add(name.toLowerCase());
+    }
+  }
+  return names;
 }
 
 function isBroadcaster(data: ChatEventData, broadcasterUsername: string | undefined): boolean {
+  // Definitive on Twitch: the message author is the channel owner (their user id equals the
+  // channel's room id).
+  const roomId = data.tags?.["room-id"];
+  const userId = data.tags?.["user-id"];
+  if (roomId && userId && roomId === userId) return true;
+  if (badgeNames(data).has("broadcaster")) return true;
+  // Fallback for shapes without ids/badges: the sender's name matches the channel name.
   const nick = (data.nick ?? data.displayName ?? "").toLowerCase();
-  if (nick.length > 0 && nick === (broadcasterUsername ?? "").toLowerCase()) return true;
-  // Fallback: a broadcaster badge/flag, so the broadcaster is recognized even when the
-  // channel username is unknown (e.g. a mount that missed onWidgetLoad) or the nick differs.
-  return /broadcaster/.test(String(data.tags?.badges ?? "")) || Boolean(data.badges && data.badges.broadcaster);
+  return nick.length > 0 && nick === (broadcasterUsername ?? "").toLowerCase();
+}
+
+function isModerator(data: ChatEventData): boolean {
+  if (data.tags?.mod === "1") return true;
+  return badgeNames(data).has("moderator");
+}
+
+export function isBroadcasterOrMod(data: ChatEventData, broadcasterUsername: string | undefined): boolean {
+  return isBroadcaster(data, broadcasterUsername) || isModerator(data);
 }
 
 export function hasCommandPermission(
@@ -27,5 +53,7 @@ export function hasCommandPermission(
   data: ChatEventData,
   broadcasterUsername: string | undefined,
 ): boolean {
-  return permission === "broadcaster" ? isBroadcaster(data, broadcasterUsername) : isBroadcasterOrMod(data, broadcasterUsername);
+  return permission === "broadcaster"
+    ? isBroadcaster(data, broadcasterUsername)
+    : isBroadcasterOrMod(data, broadcasterUsername);
 }

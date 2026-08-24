@@ -18,7 +18,9 @@ export interface EventReceivedDetail {
       nick?: string;
       displayName?: string;
       tags?: Record<string, string>;
-      badges?: Record<string, unknown>;
+      // SE delivers badges as an array of { type, version } and/or an object map, depending
+      // on version; the raw IRC badges string lives in tags.badges.
+      badges?: ReadonlyArray<{ type?: string; version?: string }> | Record<string, unknown>;
       redemption?: { reward?: { title?: string }; userInput?: string };
       reward?: { title?: string };
       title?: string;
