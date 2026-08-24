@@ -438,6 +438,29 @@ function demoHtml() {
     remountTimer = setTimeout(remountWheel, delayMs);
   }
 
+  // Push a slider's value straight onto the mounted widget's CSS variables so it updates while
+  // you drag, instead of only after the debounced remount. Only sliders whose effect is a pure
+  // CSS variable are handled here; the rest (label fit, seam zone, sound levels) reconcile on
+  // the remount. Mirrors the variables set in render/chrome.ts addChrome.
+  function applyLiveSlider(key, value) {
+    var c = document.querySelector(".wheel-container");
+    if (!c) return;
+    if (key === "titleFontSize") {
+      c.style.setProperty("--title-font", value + "px");
+      var pill = c.querySelector(".title-wrap");
+      if (pill) pill.style.width = "auto"; // let the pill fit the resized text until the remount refits it
+    } else if (key === "titleGap") {
+      c.style.setProperty("--title-gap", value + "px");
+    } else if (key === "scaleWidget") {
+      c.style.setProperty("--user-scale", String(value));
+    } else if (key === "hubSize") {
+      c.style.setProperty("--hub-size", value + "%");
+      var inner = Math.min(0.8, Number(value) / 100 + 0.04);
+      var midR = (inner + 0.9) / 2; // matches labelBand(): outer edge 0.90
+      c.style.setProperty("--entry-top", (1 - midR) * 50 + "%");
+    }
+  }
+
   function humanSize(chars) {
     var kb = chars / 1024;
     return kb >= 1024 ? (Math.round(kb / 102.4) / 10) + " MB" : Math.round(kb) + " KB";
@@ -615,6 +638,7 @@ function demoHtml() {
       out.textContent = String(initVal);
       input.addEventListener("input", function () {
         out.textContent = input.value;
+        applyLiveSlider(field.key, input.value); // instant visual feedback; remount reconciles
         scheduleRemount(250);
       });
       sliderWrap.appendChild(input);

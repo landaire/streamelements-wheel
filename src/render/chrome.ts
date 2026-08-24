@@ -318,7 +318,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
     const stageLeft = parseFloat(getComputedStyle(dom.container).getPropertyValue("--stage-left")) || 0;
     const availW = Math.max(1, window.innerWidth - stageLeft);
     const availH = Math.max(1, window.innerHeight);
-    const fit = Math.min(availW / BASE_W, availH / BASE_H) * FIT_MARGIN * cfg.scale;
+    const fit = Math.min(availW / BASE_W, availH / BASE_H) * FIT_MARGIN;
     dom.container.style.setProperty("--fit-scale", String(fit));
   };
 
@@ -333,6 +333,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
 
   dom.container.style.setProperty("--title-font", cfg.titleFontSize + "px");
   dom.container.style.setProperty("--title-gap", cfg.titleGap + "px");
+  dom.container.style.setProperty("--user-scale", String(cfg.scale));
   const band = labelBand(cfg.hubSize);
   dom.container.style.setProperty("--hub-size", cfg.hubSize + "%");
   // Label vertical anchor: radius midR from centre -> top = (1 - midR) * 50% of the disc.

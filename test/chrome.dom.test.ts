@@ -18,11 +18,12 @@ describe("addChrome", () => {
     chrome.setTitle("Winner!");
     expect(chrome.title.textContent).toBe("Winner!");
   });
-  it("sets a positive fit scale on the container, proportional to cfg.scale", () => {
+  it("sets a positive fit scale (host fit) and the user scale as a separate variable", () => {
     const dom2 = buildWheel(document, cfg); // scaleWidget 2
     addChrome(document, dom2, cfg);
-    const s2 = parseFloat(dom2.container.style.getPropertyValue("--fit-scale"));
-    expect(s2).toBeGreaterThan(0);
+    const fit2 = parseFloat(dom2.container.style.getPropertyValue("--fit-scale"));
+    expect(fit2).toBeGreaterThan(0);
+    expect(parseFloat(dom2.container.style.getPropertyValue("--user-scale"))).toBeCloseTo(2, 5);
     const cfg1 = (() => {
       const r = parseConfig({ sliceEntries: "A, B", scaleWidget: 1 });
       if (r.kind !== "ok") throw new Error("bad");
@@ -30,8 +31,11 @@ describe("addChrome", () => {
     })();
     const dom1 = buildWheel(document, cfg1);
     addChrome(document, dom1, cfg1);
-    const s1 = parseFloat(dom1.container.style.getPropertyValue("--fit-scale"));
-    expect(s2).toBeCloseTo(s1 * 2, 5); // fit scales linearly with the user's scale setting
+    const fit1 = parseFloat(dom1.container.style.getPropertyValue("--fit-scale"));
+    // Fit no longer folds in the user scale (that lives in --user-scale so it can update live),
+    // so the fit value is the same regardless of the scale setting.
+    expect(fit2).toBeCloseTo(fit1, 5);
+    expect(parseFloat(dom1.container.style.getPropertyValue("--user-scale"))).toBeCloseTo(1, 5);
   });
 
   it("refit no-ops entry text when the container has no live layout (jsdom, pre-attach)", () => {

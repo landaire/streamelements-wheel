@@ -11,7 +11,9 @@
   top: 50%;
   width: var(--disc);
   height: calc(var(--disc) + var(--hr));
-  transform: translate(-50%, -50%) scale(var(--fit-scale, 1));
+  /* --fit-scale fits the box to the host; --user-scale is the streamer's scale slider, kept
+     separate so the playground can update it live without recomputing the fit. */
+  transform: translate(-50%, -50%) scale(calc(var(--fit-scale, 1) * var(--user-scale, 1)));
   transform-origin: center center;
   font-family: var(--wheel-font, "Nunito"), "Segoe UI", system-ui, sans-serif;
 }
