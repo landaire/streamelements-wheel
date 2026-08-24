@@ -256,11 +256,11 @@ function demoHtml() {
     <div id="share-bar">
       <label for="config-url">Config URL</label>
       <input id="config-url" type="text" spellcheck="false" placeholder="paste a URL, press Enter to load" />
-      <label for="config-code">Config code</label>
-      <input id="config-code" type="text" spellcheck="false" placeholder="(all defaults)" />
+      <label for="config-code">Config code (copy this, or paste one here to import)</label>
+      <input id="config-code" type="text" spellcheck="false" placeholder="paste a config code here, then press Enter or Import" />
       <div class="share-actions">
         <button id="copy-config" type="button" class="act-btn primary">Copy config code</button>
-        <button id="paste-config" type="button" class="act-btn primary">Paste config code</button>
+        <button id="paste-config" type="button" class="act-btn primary">Import config code</button>
         <button id="share" type="button" class="act-btn">Copy share link</button>
       </div>
       <div id="share-status"></div>
@@ -993,18 +993,18 @@ function demoHtml() {
   document.getElementById("paste-config").addEventListener("click", function () {
     var status = document.getElementById("share-status");
     var fromField = document.getElementById("config-code").value.trim();
+    if (fromField) { applyCode(fromField); return; } // import whatever is in the box first
+    // box empty: pull the code from the clipboard
     if (navigator.clipboard && navigator.clipboard.readText) {
       navigator.clipboard.readText().then(
-        function (text) { applyCode(text || fromField); },
-        function () {
-          if (fromField) applyCode(fromField);
-          else if (status) status.textContent = "Clipboard blocked -- paste into the code box, press Enter";
-        }
+        function (text) {
+          if (text && text.trim()) applyCode(text);
+          else if (status) status.textContent = "Paste a config code into the box, then Import";
+        },
+        function () { if (status) status.textContent = "Paste a config code into the box, then Import"; }
       );
-    } else if (fromField) {
-      applyCode(fromField);
     } else if (status) {
-      status.textContent = "Paste the code into the box, press Enter";
+      status.textContent = "Paste a config code into the box, then Import";
     }
   });
 
