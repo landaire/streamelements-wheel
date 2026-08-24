@@ -120,19 +120,24 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: AudioConfig): A
     });
   };
 
-  // Cash register "cha-CHING": a drawer thunk and click, then two bright metallic bell dings
-  // (inharmonic bell partials), the second higher and ringing longer. Money, baby.
+  // MONEY: a bright "cha-CHING" register bell, then a cascade of coins clinking out. The
+  // bell is two struck-bell dings; the cascade is a run of short bright metallic pings at
+  // scattered pitches and slightly irregular timing, like coins tumbling into a tray.
   const cashRegisterSynth = (): void => {
-    tone({ freq: 200, glideToHz: 90, type: "sine", peak: 0.18, attackSec: 0.002, decaySec: 0.11 });
-    noise({ durSec: 0.035, filterHz: 1400, q: 0.7, peak: 0.1 });
-    const ding = (atSec: number, base: number, gain: number, decaySec: number): void => {
-      const partials = [1, 2.76, 5.4, 8.9]; // struck-bell inharmonic ratios
-      partials.forEach((ratio, i) => {
-        tone({ freq: base * ratio, type: "sine", peak: gain * (i === 0 ? 1 : 0.4 / i), attackSec: 0.002, decaySec: decaySec * (i === 0 ? 1 : 0.6), atSec });
+    const bell = (atSec: number, base: number, gain: number, decaySec: number): void => {
+      [1, 2.76, 5.4].forEach((ratio, i) => {
+        tone({ freq: base * ratio, type: "sine", peak: gain * (i === 0 ? 1 : 0.35 / i), attackSec: 0.002, decaySec: decaySec * (i === 0 ? 1 : 0.55), atSec });
       });
     };
-    ding(0.04, 1050, 0.16, 0.35);
-    ding(0.15, 1400, 0.18, 0.6);
+    bell(0.0, 1050, 0.13, 0.35);
+    bell(0.1, 1500, 0.16, 0.7);
+    const coin = (atSec: number, base: number, gain: number): void => {
+      [1, 2.4, 4.2].forEach((ratio, i) => {
+        tone({ freq: base * ratio, type: "sine", peak: gain * (i === 0 ? 1 : 0.3 / i), attackSec: 0.001, decaySec: 0.11 - i * 0.02, atSec });
+      });
+    };
+    const pitches = [2637, 3136, 2093, 3520, 2794, 2349, 3136, 2637, 3520, 2960, 2093, 2794, 3136, 2349];
+    pitches.forEach((freq, i) => coin(0.22 + i * 0.05 + (i % 3) * 0.006, freq, 0.055));
   };
 
   // On-the-line chime: same impact-plus-ring shape as the win, but a suspended C-F-G cluster
