@@ -305,18 +305,24 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   };
   syncTitleVisibility(cfg.title);
 
-  // Keep the pill from resizing as the slot-machine roll cycles labels of different lengths:
-  // set its min-width to the widest of the title and every option. A CSS transition animates
-  // any change that does occur (e.g. a two-option winner) quickly.
+  // Keep the pill from resizing as the slot-machine roll cycles labels: its min-width is the
+  // widest of the title, the current text, and every option (plus a buffer for font metrics),
+  // and it is only recomputed on a debounce so the rapid roll never resizes it mid-spin. A
+  // CSS transition smooths the one change that does happen (a wider two-option winner).
   const measureCtx = doc.createElement("canvas").getContext("2d");
   const fitTitleWidth = (): void => {
     if (!measureCtx) return;
     const cs = getComputedStyle(title);
     if (!cs.fontSize || cs.fontSize === "0px") return;
     measureCtx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-    let max = measureCtx.measureText(cfg.title).width;
+    let max = Math.max(measureCtx.measureText(cfg.title).width, measureCtx.measureText(title.textContent ?? "").width);
     for (const s of cfg.slices) max = Math.max(max, measureCtx.measureText(s.text).width);
-    titleWrap.style.minWidth = Math.ceil(max) + "px";
+    titleWrap.style.minWidth = Math.ceil(max * 1.04) + 16 + "px";
+  };
+  let titleSizeTimer: ReturnType<typeof setTimeout> | undefined;
+  const fitTitleWidthDebounced = (): void => {
+    if (titleSizeTimer) clearTimeout(titleSizeTimer);
+    titleSizeTimer = setTimeout(fitTitleWidth, 220);
   };
 
   const fitTextEl = centerpiece.querySelector<HTMLElement>(".hub-text-fit");
@@ -330,12 +336,17 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   if (typeof window !== "undefined") {
     window.addEventListener("resize", refit);
   }
+  // The configured font loads async; re-fit once it is ready so text measurements use it.
+  if (doc.fonts && typeof doc.fonts.ready?.then === "function") {
+    void doc.fonts.ready.then(refit);
+  }
 
   return {
     title,
     setTitle: (text: string): void => {
       title.textContent = text;
       syncTitleVisibility(text);
+      fitTitleWidthDebounced(); // re-fit only once the title settles, not on every roll frame
     },
     refit,
   };
