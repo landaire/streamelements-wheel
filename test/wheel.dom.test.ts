@@ -152,6 +152,24 @@ describe("hub rendering", () => {
     expect(img.style.transform).toBe("scale(2)");
   });
 
+  it("unlocked hub image uses a translate offset (may clip) and centered object-position", () => {
+    const r = parseConfig({
+      sliceEntries: "A, B",
+      hubMode: "image",
+      hubImage: "data:image/gif;base64,R0lGODlhAQABAAAAACw=",
+      hubImageUnlocked: true,
+      hubImageZoom: 150,
+      hubImageOffsetX: 80,
+      hubImageOffsetY: 20,
+    });
+    if (r.kind !== "ok") throw new Error("bad");
+    const dom = buildWheel(document, r.value);
+    addChrome(document, dom, r.value);
+    const img = dom.container.querySelector<HTMLImageElement>("img.hub-image")!;
+    expect(img.style.objectPosition).toBe("50% 50%");
+    expect(img.style.transform).toBe("translate(30%, -30%) scale(1.5)");
+  });
+
   it("omits the hub-fill class when hub image fill is off", () => {
     const r = parseConfig({ sliceEntries: "A, B", hubMode: "image", hubImage: "data:image/gif;base64,R0lGODlhAQABAAAAACw=", hubImageFill: false });
     if (r.kind !== "ok") throw new Error("bad");

@@ -17,6 +17,8 @@ export interface WheelConfig {
   scale: number;
   style: WheelStyle;
   title: string;
+  titleFontSize: number; // px
+  titleGap: number; // px gap between the title pill and the wheel top
   fontFamily: string;
   labelSizeMax: number; // largest slice-label font size (base px)
   labelSizeMin: number; // smallest slice-label font size (base px)
@@ -40,9 +42,10 @@ export interface WheelConfig {
   hubMode: HubMode;
   hubImage: string;
   hubImageFill: boolean; // cover the hub out to the border vs inset with the rim showing
+  hubImageUnlocked: boolean; // free placement: translate arbitrarily (may clip) vs coverage-preserving
   hubImageZoom: number; // scale factor >= 1 applied to the hub image
-  hubImageOffsetX: number; // object-position x, 0..100 (%)
-  hubImageOffsetY: number; // object-position y, 0..100 (%)
+  hubImageOffsetX: number; // 50 = centered; locked reads it as object-position %, free as a translate %
+  hubImageOffsetY: number;
   hubText: string;
   hubTextStyle: HubTextStyle;
   winSound: string | undefined;
@@ -154,6 +157,8 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       scale: num(fieldData.scaleWidget, FIELD_DEFAULTS.scaleWidget as number),
       style,
       title: str(fieldData.wheelTitle, FIELD_DEFAULTS.wheelTitle as string),
+      titleFontSize: Math.max(8, Math.min(40, num(fieldData.titleFontSize, FIELD_DEFAULTS.titleFontSize as number))),
+      titleGap: Math.max(0, Math.min(60, num(fieldData.titleGap, FIELD_DEFAULTS.titleGap as number))),
       fontFamily: str(fieldData.fontFamily, FIELD_DEFAULTS.fontFamily as string).trim(),
       labelSizeMax,
       labelSizeMin,
@@ -178,9 +183,11 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       hubMode,
       hubImage: str(fieldData.hubImage, FIELD_DEFAULTS.hubImage as string),
       hubImageFill: bool(fieldData.hubImageFill, FIELD_DEFAULTS.hubImageFill as boolean),
+      hubImageUnlocked: bool(fieldData.hubImageUnlocked, FIELD_DEFAULTS.hubImageUnlocked as boolean),
       hubImageZoom: Math.max(1, Math.min(4, num(fieldData.hubImageZoom, FIELD_DEFAULTS.hubImageZoom as number) / 100)),
-      hubImageOffsetX: Math.max(0, Math.min(100, num(fieldData.hubImageOffsetX, FIELD_DEFAULTS.hubImageOffsetX as number))),
-      hubImageOffsetY: Math.max(0, Math.min(100, num(fieldData.hubImageOffsetY, FIELD_DEFAULTS.hubImageOffsetY as number))),
+      // Wide range so free placement can slide the image mostly off the hub; locked render clamps to 0..100.
+      hubImageOffsetX: Math.max(-200, Math.min(300, num(fieldData.hubImageOffsetX, FIELD_DEFAULTS.hubImageOffsetX as number))),
+      hubImageOffsetY: Math.max(-200, Math.min(300, num(fieldData.hubImageOffsetY, FIELD_DEFAULTS.hubImageOffsetY as number))),
       hubText: str(fieldData.hubText, FIELD_DEFAULTS.hubText as string),
       hubTextStyle,
       winSound: opt(fieldData.soundWin),

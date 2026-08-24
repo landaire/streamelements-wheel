@@ -259,8 +259,18 @@ function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): vo
     img.className = "hub-image";
     img.src = cfg.hubImage;
     img.alt = "";
-    img.style.objectPosition = cfg.hubImageOffsetX + "% " + cfg.hubImageOffsetY + "%";
-    img.style.transform = "scale(" + cfg.hubImageZoom + ")";
+    if (cfg.hubImageUnlocked) {
+      // Free placement: the image stays centered by object-position and is moved by a translate
+      // that can push it off the hub (clipped by the wrap). 50 = centered on each axis.
+      img.style.objectPosition = "50% 50%";
+      img.style.transform = "translate(" + (cfg.hubImageOffsetX - 50) + "%, " + (cfg.hubImageOffsetY - 50) + "%) scale(" + cfg.hubImageZoom + ")";
+    } else {
+      // Locked: object-position keeps the image covering the hub as it pans (no gaps).
+      const px = Math.max(0, Math.min(100, cfg.hubImageOffsetX));
+      const py = Math.max(0, Math.min(100, cfg.hubImageOffsetY));
+      img.style.objectPosition = px + "% " + py + "%";
+      img.style.transform = "scale(" + cfg.hubImageZoom + ")";
+    }
     imgWrap.appendChild(img);
     centerpiece.appendChild(imgWrap);
     centerpiece.appendChild(el(doc, "hub-image-gloss"));
@@ -303,6 +313,8 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   details.appendChild(headpiece);
   dom.container.appendChild(details);
 
+  dom.container.style.setProperty("--title-font", cfg.titleFontSize + "px");
+  dom.container.style.setProperty("--title-gap", cfg.titleGap + "px");
   const titleWrap = el(doc, "title-wrap"); // sits above the headpiece/pointer
   const title = el(doc, "title-text");
   title.textContent = cfg.title;
@@ -318,7 +330,9 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   // (debounced), so the slot-machine roll never jitters the pill. A hidden clone of the pill
   // measures a label's natural width (box-sizing-correct, unaffected by min-width/transform).
   const measurer = el(doc, "title-wrap");
-  measurer.style.cssText = "position:absolute; visibility:hidden; left:-9999px; top:0; width:auto; min-width:0; transform:none; transition:none;";
+  // bottom:auto so the class's bottom-anchor does not pin both edges (which would constrain
+  // height and mismeasure width); display:block so flex centering never affects the measure.
+  measurer.style.cssText = "position:absolute; visibility:hidden; left:-9999px; top:0; bottom:auto; display:block; width:auto; min-width:0; transform:none; transition:none;";
   dom.container.appendChild(measurer);
   const measureWidth = (text: string): number => {
     measurer.textContent = text.trim().length > 0 ? text : " ";

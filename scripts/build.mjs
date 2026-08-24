@@ -495,6 +495,34 @@ function demoHtml() {
   // A "Choose file..." control that reads the picked file as a base64 data URL and drops it
   // straight into the field, so users never hand-encode an image or sound. The encoded string
   // rides along in the config code like any other field value.
+  // Sound fields -> which cue the preview button triggers.
+  var SOUND_METHOD = { soundWin: "win", soundTick: "tick", soundSeam: "seam" };
+  var previewCtx = null;
+  function previewAudio() {
+    var sound = function (key) { var v = controls[key] ? String(controls[key].el.value).trim() : ""; return v.length ? v : undefined; };
+    var vol = function (key) { return controls[key] ? Number(controls[key].el.value) / 100 : 1; };
+    return window.Wheel.createAudio(function () {
+      if (!previewCtx) previewCtx = new (window.AudioContext || window.webkitAudioContext)();
+      return previewCtx;
+    }, {
+      winSound: sound("soundWin"), tickSound: sound("soundTick"), seamSound: sound("soundSeam"),
+      winStyle: controls.winSoundStyle && controls.winSoundStyle.el.value === "cash" ? "cash" : "chime",
+      winVolume: vol("volumeWin"), tickVolume: vol("volumeTick"), seamVolume: vol("volumeSeam"),
+    });
+  }
+  // A "Play" button that previews a sound with the current settings, without spinning.
+  function makeSoundPreview(field) {
+    var btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "f-file-btn f-sound-play";
+    btn.textContent = "Play";
+    btn.title = "Preview this sound";
+    btn.addEventListener("click", function () {
+      try { var a = previewAudio(); var m = SOUND_METHOD[field.key]; if (a && a[m]) a[m](); } catch (e) {}
+    });
+    return btn;
+  }
+
   function makeFilePicker(field, targetInput) {
     var wrap = document.createElement("div");
     wrap.className = "f-file";
@@ -520,6 +548,8 @@ function demoHtml() {
         if (!dataUrl) { status.textContent = "Could not read that file."; return; }
         var finish = function (finalUrl, note) {
           targetInput.value = finalUrl;
+          // Picking a hub image implies you want to show it: switch the hub to image mode.
+          if (field.key === "hubImage" && controls.hubMode) controls.hubMode.el.value = "image";
           status.textContent = "Embedded " + file.name + " (" + humanSize(finalUrl.length) + ")" + (note || "");
           if (finalUrl.length > 1400000) status.textContent += " -- large, your config code will be big";
           remountWheel();
@@ -646,6 +676,7 @@ function demoHtml() {
       input.addEventListener("input", function () { scheduleRemount(250); });
       row.appendChild(input);
       if (field.accept) row.appendChild(makeFilePicker(field, input));
+      if (SOUND_METHOD[field.key]) row.appendChild(makeSoundPreview(field));
     }
 
     body.appendChild(row);
@@ -673,6 +704,15 @@ function demoHtml() {
   if (controls.colorScheme) controls.colorScheme.el.addEventListener("change", syncColorVisibility);
   if (controls.gemMatchScheme) controls.gemMatchScheme.el.addEventListener("change", syncColorVisibility);
   syncColorVisibility();
+
+  // Zoom the hub image live as the slider moves (the debounced remount still persists it).
+  if (controls.hubImageZoom) {
+    controls.hubImageZoom.el.addEventListener("input", function () {
+      var img = document.querySelector(".centerpiece .hub-image");
+      if (!img) return;
+      applyHubImageLive(img, Number(controls.hubImageOffsetX.el.value) || 50, Number(controls.hubImageOffsetY.el.value) || 50, Number(controls.hubImageZoom.el.value) / 100);
+    });
+  }
 
   var editorGroupBody = groupBody("Wheel Slices");
   editorGroupBody.insertAdjacentHTML(
@@ -1026,6 +1066,21 @@ function demoHtml() {
   // Drag the hub image in the preview to pan it. Panning is expressed as object-position, so
   // the image always covers the hub (no gaps); the drag delta is scaled by how far the image
   // overflows the hub at the current zoom. Committed to the hidden offset fields on release.
+  function hubUnlocked() {
+    return !!(controls.hubImageUnlocked && controls.hubImageUnlocked.el.checked);
+  }
+
+  // Mirrors chrome.ts buildHub so the live drag/zoom preview matches the mounted render.
+  function applyHubImageLive(img, offX, offY, zoom) {
+    if (hubUnlocked()) {
+      img.style.objectPosition = "50% 50%";
+      img.style.transform = "translate(" + (offX - 50) + "%, " + (offY - 50) + "%) scale(" + zoom + ")";
+    } else {
+      img.style.objectPosition = Math.max(0, Math.min(100, offX)) + "% " + Math.max(0, Math.min(100, offY)) + "%";
+      img.style.transform = "scale(" + zoom + ")";
+    }
+  }
+
   function attachHubDrag() {
     var img = document.querySelector(".centerpiece .hub-image");
     var wrap = document.querySelector(".centerpiece .hub-image-wrap");
@@ -1033,14 +1088,22 @@ function demoHtml() {
     img.style.cursor = "grab";
     img.style.touchAction = "none";
     img.style.pointerEvents = "auto"; // .details is pointer-events:none; opt the image back in to drag
-    var dragging = false, startX = 0, startY = 0, startPX = 50, startPY = 50, curPX = 50, curPY = 50, ovX = 0, ovY = 0, moved = false;
+    var dragging = false, free = false, startX = 0, startY = 0, startPX = 50, startPY = 50, curPX = 50, curPY = 50, ovX = 0, ovY = 0, moved = false;
     function move(e) {
       if (!dragging) return;
       var dx = e.clientX - startX, dy = e.clientY - startY;
       if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
-      if (ovX > 1) curPX = Math.max(0, Math.min(100, startPX - (dx / ovX) * 100));
-      if (ovY > 1) curPY = Math.max(0, Math.min(100, startPY - (dy / ovY) * 100));
-      img.style.objectPosition = curPX + "% " + curPY + "%";
+      var rect = wrap.getBoundingClientRect();
+      if (free) {
+        // Free placement: 1:1 translate in hub-widths; no clamp so the image can slide off.
+        curPX = Math.max(-200, Math.min(300, startPX + (dx / rect.width) * 100));
+        curPY = Math.max(-200, Math.min(300, startPY + (dy / rect.height) * 100));
+      } else {
+        // Locked: object-position pan across the cover overflow (never gaps).
+        if (ovX > 1) curPX = Math.max(0, Math.min(100, startPX - (dx / ovX) * 100));
+        if (ovY > 1) curPY = Math.max(0, Math.min(100, startPY - (dy / ovY) * 100));
+      }
+      applyHubImageLive(img, curPX, curPY, Number(controls.hubImageZoom ? controls.hubImageZoom.el.value : 100) / 100);
     }
     function end() {
       if (!dragging) return;
@@ -1054,9 +1117,16 @@ function demoHtml() {
         remountWheel();
       }
     }
+    // Swallow only the click synthesized after an actual drag, so click-to-spin still works
+    // on a plain click but a drag never spins. The click can land on the container (if the
+    // pointer left the image), so this must sit in the capture phase at the document level.
+    function killClick(e) {
+      if (moved) { e.stopPropagation(); e.preventDefault(); }
+      document.removeEventListener("click", killClick, true);
+    }
     img.addEventListener("pointerdown", function (e) {
       e.preventDefault();
-      e.stopPropagation(); // a hub drag must not also trigger click-to-spin on the wheel
+      free = hubUnlocked();
       var rect = wrap.getBoundingClientRect();
       var natW = img.naturalWidth || 1, natH = img.naturalHeight || 1;
       var zoom = Number(controls.hubImageZoom ? controls.hubImageZoom.el.value : 100) / 100;
@@ -1068,10 +1138,11 @@ function demoHtml() {
       startPY = curPY = Number(controls.hubImageOffsetY.el.value) || 50;
       dragging = true; moved = false;
       img.style.cursor = "grabbing";
+      document.removeEventListener("click", killClick, true);
+      document.addEventListener("click", killClick, true);
       window.addEventListener("pointermove", move);
       window.addEventListener("pointerup", end);
     });
-    img.addEventListener("click", function (e) { e.stopPropagation(); });
   }
 
   function remountWheel() {

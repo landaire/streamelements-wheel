@@ -47,12 +47,19 @@ describe("parseConfig", () => {
       expect(d.value.hubImageOffsetX).toBe(50);
       expect(d.value.hubImageOffsetY).toBe(50);
     }
-    const r = parseConfig({ ...base, hubImageFill: false, hubImageZoom: 250, hubImageOffsetX: -20, hubImageOffsetY: 140 });
+    const r = parseConfig({ ...base, hubImageFill: false, hubImageUnlocked: true, hubImageZoom: 250, hubImageOffsetX: -20, hubImageOffsetY: 140 });
     if (r.kind === "ok") {
       expect(r.value.hubImageFill).toBe(false);
+      expect(r.value.hubImageUnlocked).toBe(true);
       expect(r.value.hubImageZoom).toBeCloseTo(2.5);
-      expect(r.value.hubImageOffsetX).toBe(0); // clamped
-      expect(r.value.hubImageOffsetY).toBe(100); // clamped
+      // Free-placement range is wide (-200..300); locked render clamps to 0..100 at draw time.
+      expect(r.value.hubImageOffsetX).toBe(-20);
+      expect(r.value.hubImageOffsetY).toBe(140);
+    }
+    const clamp = parseConfig({ ...base, hubImageOffsetX: -999, hubImageOffsetY: 9999 });
+    if (clamp.kind === "ok") {
+      expect(clamp.value.hubImageOffsetX).toBe(-200);
+      expect(clamp.value.hubImageOffsetY).toBe(300);
     }
   });
   it("empty sound field becomes undefined, not empty string", () => {

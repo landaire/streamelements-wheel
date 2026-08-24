@@ -222,10 +222,14 @@
 }
 .headpiece-gem { width: 100%; height: 100%; display: block; overflow: visible; }
 .title-wrap {
-  position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+  /* Anchored by its bottom a configurable gap above the wheel top (the disc starts --disc px
+     up from the container bottom), so the spacing knob is independent of the pill's height. */
+  position: absolute; left: 50%; top: auto; bottom: calc(var(--disc, 500px) + var(--title-gap, 52px));
+  transform: translateX(-50%);
   padding: 6px 14px; border-radius: 999px;
   background: var(--plate-bg, #ffe1e7); color: var(--title-color, #b64e5f);
-  font-weight: 600; font-size: 15px; white-space: nowrap; text-align: center;
+  font-weight: 600; font-size: var(--title-font, 15px); white-space: nowrap; text-align: center;
+  display: flex; align-items: center; justify-content: center; /* keep the title centered when the pill is wider than its text */
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
   box-sizing: border-box;
   /* The pill's width is driven in JS: it grows instantly to fit a wider label and only
