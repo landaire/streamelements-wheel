@@ -252,7 +252,7 @@ function buildHub(doc: Document, centerpiece: HTMLElement, cfg: WheelConfig): vo
 // Base coordinate box the widget is authored in; --fit-scale scales it into the host box.
 const BASE_W = 500;
 const BASE_H = 596; // 500 disc + 96 headroom (must match --disc + --hr in wheel.css)
-const FIT_MARGIN = 0.96; // leaves a little breathing room inside the box
+const FIT_MARGIN = 0.9; // leaves breathing room inside the box so nothing sits against an edge
 
 export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrome {
   // Scale the whole widget to fit the available area (host layer minus any side panel via
