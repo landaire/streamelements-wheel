@@ -33,10 +33,32 @@ describe("isBroadcasterOrMod", () => {
     expect(hasCommandPermission("broadcaster", bc, "streamer")).toBe(true);
   });
   it("accepts any moderator-variant badge (e.g. a lead moderator)", () => {
-    const leadByBadge: ChatEventData = { nick: "l", badges: [{ type: "lead-moderator", version: "1" }] };
-    const leadByTag: ChatEventData = { nick: "l", tags: { badges: "lead-moderator/1" } };
+    const leadByBadge: ChatEventData = { nick: "l", badges: [{ type: "lead_moderator", version: "1" }] };
+    const leadByTag: ChatEventData = { nick: "l", tags: { badges: "lead_moderator/1" } };
     expect(isBroadcasterOrMod(leadByBadge, "streamer")).toBe(true);
     expect(isBroadcasterOrMod(leadByTag, "streamer")).toBe(true);
+  });
+});
+
+describe("hasCommandPermission tiers (broadcaster / leadmods / mods)", () => {
+  const regularMod: ChatEventData = { nick: "m", tags: { mod: "1" } };
+  const leadMod: ChatEventData = { nick: "l", tags: { mod: "1", badges: "lead_moderator/1" } };
+  const bc: ChatEventData = { nick: "streamer" };
+
+  it("leadmods: broadcaster and lead mods allowed, regular mods not", () => {
+    expect(hasCommandPermission("leadmods", bc, "streamer")).toBe(true);
+    expect(hasCommandPermission("leadmods", leadMod, "streamer")).toBe(true);
+    expect(hasCommandPermission("leadmods", regularMod, "streamer")).toBe(false);
+  });
+  it("mods: broadcaster, lead mods, and regular mods all allowed", () => {
+    expect(hasCommandPermission("mods", bc, "streamer")).toBe(true);
+    expect(hasCommandPermission("mods", leadMod, "streamer")).toBe(true);
+    expect(hasCommandPermission("mods", regularMod, "streamer")).toBe(true);
+  });
+  it("broadcaster: only the broadcaster, not any moderator", () => {
+    expect(hasCommandPermission("broadcaster", bc, "streamer")).toBe(true);
+    expect(hasCommandPermission("broadcaster", leadMod, "streamer")).toBe(false);
+    expect(hasCommandPermission("broadcaster", regularMod, "streamer")).toBe(false);
   });
 });
 

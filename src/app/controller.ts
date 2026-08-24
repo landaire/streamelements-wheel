@@ -7,7 +7,7 @@ import { buildWidget, type BuiltWidget } from "./builder.js";
 import { hasSEApi } from "../se/bootstrap.js";
 import { seStore, memoryStore, type Store } from "../se/store.js";
 import { parseWheelCommand } from "../se/commands.js";
-import { hasCommandPermission, isBroadcasterOrMod } from "../se/permissions.js";
+import { hasCommandPermission } from "../se/permissions.js";
 import { parseRedemption } from "../se/redemption.js";
 import { consoleListSink, type ListSink } from "../se/sinks.js";
 import type { Rng } from "../model/spin.js";
@@ -235,7 +235,7 @@ export function createController(
 
     // Legacy standalone spin command, kept alongside "<wheelCommand> spin".
     if (trimmed.toLowerCase() === baseCfg.spinCommand.trim().toLowerCase()) {
-      if (isBroadcasterOrMod(data, broadcasterUsername)) spin();
+      if (hasCommandPermission(baseCfg.commandPermission, data, broadcasterUsername)) spin();
       return;
     }
 

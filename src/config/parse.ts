@@ -9,7 +9,7 @@ import { FIELD_DEFAULTS } from "./fields.js";
 export type WheelStyle = "halfwheel" | "fullwheel";
 export type HubMode = "icon" | "image" | "text";
 export type HubTextStyle = "fit" | "curve";
-export type CommandPermission = "mods" | "broadcaster";
+export type CommandPermission = "broadcaster" | "leadmods" | "mods";
 export type SeamResult = "respin" | "both";
 export type AddEntrySource = "input" | "username";
 
@@ -118,9 +118,11 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
   const commandPermission: CommandPermission =
     fieldData.commandPermission === "broadcaster"
       ? "broadcaster"
-      : fieldData.commandPermission === "mods"
-        ? "mods"
-        : (FIELD_DEFAULTS.commandPermission as CommandPermission);
+      : fieldData.commandPermission === "leadmods"
+        ? "leadmods"
+        : fieldData.commandPermission === "mods"
+          ? "mods"
+          : (FIELD_DEFAULTS.commandPermission as CommandPermission);
 
   const addEntrySource: AddEntrySource =
     fieldData.addEntrySource === "username"

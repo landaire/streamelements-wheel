@@ -42,9 +42,17 @@ function isBroadcaster(data: ChatEventData, broadcasterUsername: string | undefi
 function isModerator(data: ChatEventData): boolean {
   // The IRC mod tag is set for every moderator, whatever their badge.
   if (data.tags?.mod === "1") return true;
-  // Also accept any moderator-type badge (moderator, and any "lead-moderator"-style variant).
+  // Also accept any moderator-type badge (moderator, and any lead_moderator variant).
   for (const name of badgeNames(data)) {
     if (name.includes("moderator")) return true;
+  }
+  return false;
+}
+
+// A lead moderator carries the lead_moderator badge (in addition to being a moderator).
+function isLeadModerator(data: ChatEventData): boolean {
+  for (const name of badgeNames(data)) {
+    if (name.includes("lead") && name.includes("moderator")) return true;
   }
   return false;
 }
@@ -58,7 +66,13 @@ export function hasCommandPermission(
   data: ChatEventData,
   broadcasterUsername: string | undefined,
 ): boolean {
-  return permission === "broadcaster"
-    ? isBroadcaster(data, broadcasterUsername)
-    : isBroadcasterOrMod(data, broadcasterUsername);
+  if (isBroadcaster(data, broadcasterUsername)) return true;
+  switch (permission) {
+    case "broadcaster":
+      return false;
+    case "leadmods":
+      return isLeadModerator(data);
+    case "mods":
+      return isModerator(data);
+  }
 }

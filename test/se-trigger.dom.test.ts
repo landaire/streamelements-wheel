@@ -23,7 +23,7 @@ describe("SE chat-trigger integration", () => {
   it("auto-mounts on onWidgetLoad and spins only for an authorized !spin command", async () => {
     vi.useFakeTimers();
 
-    dispatchWidgetLoad({ sliceEntries: "A, B, C, D", spinDuration: 0.05, spinCommand: "!spin" });
+    dispatchWidgetLoad({ sliceEntries: "A, B, C, D", spinDuration: 0.05, spinCommand: "!spin", commandPermission: "mods" });
     expect(document.querySelectorAll(".slice").length).toBe(4);
 
     const initial = spinDegree();
