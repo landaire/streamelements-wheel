@@ -466,21 +466,26 @@ function demoHtml() {
     return kb >= 1024 ? (Math.round(kb / 102.4) / 10) + " MB" : Math.round(kb) + " KB";
   }
 
-  // Crops fully-transparent margins off an image data URL so the hub gets true content, not
-  // padding. Scans the alpha channel for the tight bounding box of visible pixels and re-exports
-  // that region as PNG. Non-transparent images (e.g. JPEG) come back unchanged.
-  function trimTransparent(dataUrl, cb) {
+  // Crops transparent margins off any image source -- data URL or remote URL -- so the hub gets
+  // true content, not padding, no matter how the image was provided. Calls cb(result, reason):
+  //   "trimmed"    result = a cropped PNG data URL
+  //   "nochange"   readable but no transparent margin to trim; result = null (keep the source)
+  //   "unreadable" a cross-origin URL whose host blocks CORS, so pixels cannot be read
+  //   "error"      the image failed to load
+  function trimImageSrc(src, cb) {
+    if (!src) { cb(null, "error"); return; }
     var img = new Image();
-    img.onerror = function () { cb(dataUrl, false); };
+    if (src.slice(0, 5) !== "data:") img.crossOrigin = "anonymous"; // request CORS so the pixels are readable
+    img.onerror = function () { cb(null, "error"); };
     img.onload = function () {
       var w = img.naturalWidth, h = img.naturalHeight;
-      if (!w || !h) { cb(dataUrl, false); return; }
+      if (!w || !h) { cb(null, "error"); return; }
       var c = document.createElement("canvas");
       c.width = w; c.height = h;
       var ctx = c.getContext("2d");
       ctx.drawImage(img, 0, 0);
       var data;
-      try { data = ctx.getImageData(0, 0, w, h).data; } catch (e) { cb(dataUrl, false); return; }
+      try { data = ctx.getImageData(0, 0, w, h).data; } catch (e) { cb(null, "unreadable"); return; }
       var minX = w, minY = h, maxX = -1, maxY = -1;
       for (var y = 0; y < h; y++) {
         for (var x = 0; x < w; x++) {
@@ -492,15 +497,14 @@ function demoHtml() {
           }
         }
       }
-      if (maxX < 0) { cb(dataUrl, false); return; } // fully transparent: leave it be
-      if (minX === 0 && minY === 0 && maxX === w - 1 && maxY === h - 1) { cb(dataUrl, false); return; } // nothing to trim
+      if (maxX < 0 || (minX === 0 && minY === 0 && maxX === w - 1 && maxY === h - 1)) { cb(null, "nochange"); return; }
       var tw = maxX - minX + 1, th = maxY - minY + 1;
       var c2 = document.createElement("canvas");
       c2.width = tw; c2.height = th;
       c2.getContext("2d").drawImage(c, minX, minY, tw, th, 0, 0, tw, th);
-      cb(c2.toDataURL("image/png"), true);
+      cb(c2.toDataURL("image/png"), "trimmed");
     };
-    img.src = dataUrl;
+    img.src = src;
   }
 
   // A "Choose file..." control that reads the picked file as a base64 data URL and drops it
@@ -547,6 +551,33 @@ function demoHtml() {
     btn.textContent = "Choose file...";
     var status = document.createElement("span");
     status.className = "f-file-status";
+    var isImage = (field.accept || "").indexOf("image/") === 0;
+    var lastIngested = ""; // guards the URL/data blur handler from reprocessing an unchanged value
+
+    // One pipeline for every image source (file, data URL, or URL): trim transparent margins and
+    // reflect the result identically. Only embed when trimming actually changed the image, so a
+    // plain URL with nothing to trim stays a URL (small config) instead of being inlined.
+    function ingestImage(src, label) {
+      lastIngested = src;
+      if (field.key === "hubImage" && controls.hubMode) controls.hubMode.el.value = "image";
+      status.textContent = "Loading " + label + "...";
+      trimImageSrc(src, function (trimmed, reason) {
+        if (reason === "trimmed") {
+          targetInput.value = trimmed;
+          lastIngested = trimmed;
+          status.textContent = "Trimmed and embedded (" + humanSize(trimmed.length) + ")";
+          if (trimmed.length > 1400000) status.textContent += " -- large, your config code will be big";
+        } else if (reason === "nochange") {
+          status.textContent = "No transparent margins to trim";
+        } else if (reason === "unreadable") {
+          status.textContent = "Used as-is: the image host blocks cross-origin trimming";
+        } else {
+          status.textContent = "Could not load that image";
+        }
+        remountWheel();
+      });
+    }
+
     btn.addEventListener("click", function () { fileInput.click(); });
     fileInput.addEventListener("change", function () {
       var file = fileInput.files && fileInput.files[0];
@@ -557,23 +588,26 @@ function demoHtml() {
       reader.onload = function () {
         var dataUrl = typeof reader.result === "string" ? reader.result : "";
         if (!dataUrl) { status.textContent = "Could not read that file."; return; }
-        var finish = function (finalUrl, note) {
-          targetInput.value = finalUrl;
-          // Picking a hub image implies you want to show it: switch the hub to image mode.
-          if (field.key === "hubImage" && controls.hubMode) controls.hubMode.el.value = "image";
-          status.textContent = "Embedded " + file.name + " (" + humanSize(finalUrl.length) + ")" + (note || "");
-          if (finalUrl.length > 1400000) status.textContent += " -- large, your config code will be big";
-          remountWheel();
-          fileInput.value = ""; // let the same file be re-picked
-        };
-        if ((field.accept || "").indexOf("image/") === 0) {
-          trimTransparent(dataUrl, function (url, didTrim) { finish(url, didTrim ? ", trimmed transparent edges" : ""); });
-        } else {
-          finish(dataUrl, "");
-        }
+        fileInput.value = ""; // let the same file be re-picked
+        if (isImage) { ingestImage(dataUrl, file.name); return; }
+        // Audio: embed as-is (no trimming applies).
+        targetInput.value = dataUrl;
+        status.textContent = "Embedded " + file.name + " (" + humanSize(dataUrl.length) + ")";
+        if (dataUrl.length > 1400000) status.textContent += " -- large, your config code will be big";
+        remountWheel();
       };
       reader.readAsDataURL(file);
     });
+
+    // Typing or pasting a URL/data URL into an image field runs the same trim pipeline on blur,
+    // so providing an image by URL feels the same as picking a file.
+    if (isImage) {
+      targetInput.addEventListener("change", function () {
+        var v = targetInput.value.trim();
+        if (v && v !== lastIngested) ingestImage(v, "image");
+      });
+    }
+
     wrap.appendChild(btn);
     wrap.appendChild(fileInput);
     wrap.appendChild(status);
