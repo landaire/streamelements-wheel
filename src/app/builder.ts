@@ -33,6 +33,9 @@ export interface BuildOpts {
   // Seeds the animator's rotation accumulator; used on a controller rebuild so the
   // wheel doesn't visually snap back to 0.
   initialRotationDeg?: number;
+  // Called once a spin fully settles (after the result is announced). The controller uses
+  // it to run rebuilds that were deferred while the wheel was spinning.
+  onSettle?: () => void;
 }
 
 export interface BuiltWidget {
@@ -99,6 +102,7 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
         } else {
           announce.seam();
         }
+        opts.onSettle?.();
       },
     },
     opts.rng,

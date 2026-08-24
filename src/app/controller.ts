@@ -92,6 +92,12 @@ export function createController(
   let built: BuiltWidget | undefined;
   let rotationSeed = 0;
   let pending: Promise<void> = Promise.resolve();
+  // A rebuild requested while the wheel is mid-spin is deferred to onSettle so the spin is
+  // never interrupted and its serialization guard is never lost to a fresh animator.
+  let renderPending = false;
+  const onSettle = (): void => {
+    if (renderPending) render();
+  };
 
   // Fixed parent for the wheel: render() only ever clears/rebuilds this slot, never
   // touching whatever else lives in `parent`.
@@ -122,6 +128,12 @@ export function createController(
   }
 
   function render(): void {
+    // Never rebuild mid-spin: defer until the spin settles (onSettle re-invokes render).
+    if (built && built.isSpinning()) {
+      renderPending = true;
+      return;
+    }
+    renderPending = false;
     const cfg = currentCfg();
     if (built) rotationSeed = built.currentRotationDeg();
     slot.replaceChildren();
@@ -129,6 +141,7 @@ export function createController(
       ...(opts.rng ? { rng: opts.rng } : {}),
       ...(opts.audioCtxFactory ? { audioCtxFactory: opts.audioCtxFactory } : {}),
       initialRotationDeg: rotationSeed,
+      onSettle,
     });
     slot.appendChild(built.container);
     built.refit();
@@ -204,7 +217,8 @@ export function createController(
   }
 
   function spin(): void {
-    if (paused || !built) return;
+    // Serialize spins: ignore a spin request while one is already running.
+    if (paused || !built || built.isSpinning()) return;
     built.spin();
   }
 

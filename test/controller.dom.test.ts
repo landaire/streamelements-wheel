@@ -94,6 +94,24 @@ describe("WheelController.removeEntry / resetEntries", () => {
   });
 });
 
+describe("WheelController spin serialization", () => {
+  it("defers a mid-spin rebuild until the spin settles, without interrupting it", async () => {
+    const parent = document.createElement("div");
+    const created = createController(document, parent, detail({ spinDuration: 0.05, sliceEntries: "A, B" }), { store: memoryStore() });
+    if ("error" in created) throw new Error("bad config");
+    await created.ready;
+    expect(parent.querySelectorAll(".entry").length).toBe(2);
+
+    created.spin();
+    created.addEntry("C"); // mutate while the wheel is mid-spin
+    expect(created.entries()).toEqual(["A", "B", "C"]); // data updates immediately
+    expect(parent.querySelectorAll(".entry").length).toBe(2); // but the DOM rebuild is deferred
+
+    await new Promise((r) => setTimeout(r, 140)); // let the spin settle
+    expect(parent.querySelectorAll(".entry").length).toBe(3); // rebuilt once, after settle
+  });
+});
+
 describe("WheelController.handleChatMessage permission gating", () => {
   it("rejects a viewer's add command", () => {
     const c = makeController({ wheelCommand: "!wheel", commandPermission: "mods" });
