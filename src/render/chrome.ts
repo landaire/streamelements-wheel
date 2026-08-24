@@ -180,48 +180,31 @@ function buildCurvedText(doc: Document, text: string): SVGElement {
   return svg;
 }
 
-// A faceted plumbob gem for the fixed pointer: a bezel setting at the mount, a crown of
-// bright-to-mid facets, a specular highlight facet, a darker pavilion tapering to the tip
-// that touches the rim, and a soft white halo behind the whole gem. Every facet colors
-// from the scheme's --gem-* vars so the jewel matches the palette (or a chosen gem color).
-// Gradient/filter ids are per-call so multiple mounted widgets never share (and fight
-// over) the same SVG def id.
+// A simple plumbob gem for the fixed pointer: one flat gem body with a single vertical
+// gradient (scheme --gem-* colors, so it matches the palette), a plain white outline, and
+// one soft top glint. Gradient id is per-call so mounted widgets never share a def id.
 function buildEmeraldPointer(doc: Document): SVGElement {
   const uid = Math.random().toString(36).slice(2);
   const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
   svg.setAttribute("viewBox", "0 0 100 140");
   svg.setAttribute("class", "headpiece-gem");
 
-  const L = "var(--gem-light)";
-  const M = "var(--gem-mid)";
-  const D = "var(--gem-dark)";
-  const E = "var(--gem-edge)";
   const defs = doc.createElementNS(SVG_NS, "defs");
-  const gradients: [string, [string, string][]][] = [
-    ["bezel-" + uid, [["0%", L], ["100%", M]]],
-    ["table-" + uid, [["0%", L], ["100%", M]]],
-    ["crown-l-" + uid, [["0%", L], ["100%", M]]],
-    ["crown-r-" + uid, [["0%", M], ["100%", D]]],
-    ["pav-l-" + uid, [["0%", M], ["100%", D]]],
-    ["pav-r-" + uid, [["0%", D], ["100%", E]]],
-  ];
-  for (const [id, stops] of gradients) {
-    const grad = doc.createElementNS(SVG_NS, "linearGradient");
-    grad.setAttribute("id", id);
-    grad.setAttribute("x1", "0%");
-    grad.setAttribute("y1", "0%");
-    grad.setAttribute("x2", "0%");
-    grad.setAttribute("y2", "100%");
-    for (const [offset, color] of stops) {
-      const stop = doc.createElementNS(SVG_NS, "stop");
-      stop.setAttribute("offset", offset);
-      // var()-based stop colors resolve only through the CSS style property, not the
-      // presentation attribute.
-      stop.style.setProperty("stop-color", color);
-      grad.appendChild(stop);
-    }
-    defs.appendChild(grad);
+  const grad = doc.createElementNS(SVG_NS, "linearGradient");
+  grad.setAttribute("id", "gem-" + uid);
+  grad.setAttribute("x1", "0%");
+  grad.setAttribute("y1", "0%");
+  grad.setAttribute("x2", "0%");
+  grad.setAttribute("y2", "100%");
+  const stops: [string, string][] = [["0%", "var(--gem-light)"], ["55%", "var(--gem-mid)"], ["100%", "var(--gem-dark)"]];
+  for (const [offset, color] of stops) {
+    const stop = doc.createElementNS(SVG_NS, "stop");
+    stop.setAttribute("offset", offset);
+    // var()-based stop colors resolve only through the CSS style property, not the attribute.
+    stop.style.setProperty("stop-color", color);
+    grad.appendChild(stop);
   }
+  defs.appendChild(grad);
   svg.appendChild(defs);
 
   const poly = (points: string, fill: string, extra?: Record<string, string>): void => {
@@ -232,43 +215,10 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     svg.appendChild(p);
   };
 
-  // A single crisp, slightly larger white copy of the gem silhouette sits behind it as a
-  // plain white outline (no blur/glow).
   const silhouette = "30,0 70,0 76,20 94,56 50,138 6,56 24,20";
-  poly(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.12) translate(-50 -60)" });
-
-  // Bezel where the gem mounts to the rim edge.
-  poly("30,0 70,0 76,20 24,20", `url(#bezel-${uid})`);
-  // Pavilion (lower, shaded facets) drawn first so the crown's girdle overlaps it cleanly.
-  poly("6,56 50,74 50,138", `url(#pav-l-${uid})`);
-  poly("94,56 50,74 50,138", `url(#pav-r-${uid})`);
-  // Crown (upper, brighter facets).
-  poly("24,20 50,20 50,74 6,56", `url(#crown-l-${uid})`);
-  poly("76,20 50,20 50,74 94,56", `url(#crown-r-${uid})`);
-  // Table facet: the brightest top-facing cut.
-  poly("34,20 66,20 58,32 42,32", `url(#table-${uid})`);
-  // Specular highlight: a light reflection hugging the top-left crown facet edges.
-  poly("25,21 41,21 28,40", "rgba(255,255,255,0.55)");
-
-  // Crisp facet edges.
-  const edges = [
-    "50,20 50,138",
-    "24,20 6,56",
-    "76,20 94,56",
-    "6,56 50,74 94,56",
-    "34,20 42,32",
-    "66,20 58,32",
-  ];
-  for (const d of edges) {
-    const line = doc.createElementNS(SVG_NS, "polyline");
-    line.setAttribute("points", d);
-    line.setAttribute("fill", "none");
-    line.style.setProperty("stroke", "var(--gem-edge)");
-    line.setAttribute("stroke-width", "0.8");
-    line.setAttribute("stroke-opacity", "0.55");
-    line.setAttribute("stroke-linejoin", "round");
-    svg.appendChild(line);
-  }
+  poly(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.12) translate(-50 -60)" }); // plain white outline
+  poly(silhouette, `url(#gem-${uid})`); // gem body
+  poly("30,4 70,4 73,20 27,20", "rgba(255,255,255,0.22)"); // soft top glint
 
   return svg;
 }
