@@ -11,13 +11,17 @@ await genFields();
 
 // Tailwind -> a CSS string we inline (no external stylesheet at runtime).
 function buildCss() {
-  execFileSync("tailwindcss", ["-i", "src/styles/tailwind.css", "-o", "dist/chrome.css", "--minify"], { stdio: "inherit" });
+  execFileSync(
+    "tailwindcss",
+    ["-i", "src/styles/tailwind.css", "-o", "dist/chrome.css", "--minify"],
+    { stdio: "inherit" },
+  );
   const chrome = readFileSync("dist/chrome.css", "utf8");
   const wheel = readFileSync("src/styles/wheel.css", "utf8");
   return chrome + "\n" + wheel;
 }
 
-const cssDefine = () => ({ "__INLINE_CSS__": JSON.stringify(buildCss()) });
+const cssDefine = () => ({ __INLINE_CSS__: JSON.stringify(buildCss()) });
 
 const opts = {
   entryPoints: ["src/app.ts"],
@@ -42,7 +46,10 @@ if (serve) {
   // The playground is the landing page; instructions live in a popup inside it.
   writeFileSync("dist/index.html", demoHtml());
   // Keep old links working: demo.html now redirects to the playground at index.html.
-  writeFileSync("dist/demo.html", '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./index.html"><title>Spinning Wheel</title><a href="./index.html">Spinning Wheel playground</a>');
+  writeFileSync(
+    "dist/demo.html",
+    '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./index.html"><title>Spinning Wheel</title><a href="./index.html">Spinning Wheel playground</a>',
+  );
 }
 
 // Instructions shown in the playground's popup. Plain operating-manual style, no
@@ -84,9 +91,8 @@ function instructionsInner() {
 
   <h2>5. Notes</h2>
   <ul>
-    <li>Runs entirely in the browser. Nothing to host; no server.</li>
+    <li>Runs entirely local in the browser, no central server or selfhosting necessary.</li>
     <li>Works as an OBS Browser Source too: save the boilerplate as an .html file and point a source at it. Click the wheel to spin.</li>
-    <li>The chat trigger is not verified against a live StreamElements session. Confirm it on your channel.</li>
   </ul>
   `;
 }
