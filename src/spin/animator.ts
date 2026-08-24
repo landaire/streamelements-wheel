@@ -25,7 +25,7 @@ export interface Animator {
 }
 
 const SETTLE_GRACE_MS = 50; // fallback past animationend for headless environments
-const WINDUP_DEG = 16; // backward wind-up before the forward pull, mimics a human tug
+const WINDUP_DEG = 22; // backward wind-up before the forward pull; a weightier tug
 
 // Reads the wheel's current rotation (degrees, in [-180, 180]) from its computed transform
 // matrix. Returns undefined when no transform is applied (e.g. jsdom without the wheel

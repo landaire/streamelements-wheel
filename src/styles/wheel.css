@@ -40,34 +40,35 @@
 .wheel.is-spinning {
   animation: wheel-spin-2 var(--spin-duration, 5s) forwards;
 }
-/* Five deceleration curves selected by spin force (forceBucket in spin.ts). They differ
-   only slightly, in the early inertia; every curve shares a long, gentle tail (x2 ~0.4,
-   y2 = 1) so the wheel always glides to a slow, dead stop -- never an abrupt one. The
-   bigger per-spin variation ("some spins go longer") comes from the turn count, not from
-   a harder stop. The wind-up segment (0-7%) is shared. */
+/* Five forward-pull curves selected by spin force (forceBucket in spin.ts). Each is an
+   ease-in-out: a slow start (the weighted wheel taking a moment to get going, low initial
+   velocity), a hard pull through the middle carrying momentum, then a long gentle tail
+   (x2 ~0.4, y2 = 1) that always glides to a slow, dead stop. Force varies the early inertia
+   slightly; the bigger per-spin variation ("some spins go longer") comes from the turn
+   count. The wind-up segment (0-9%, a small backward tug) is shared. */
 @keyframes wheel-spin-0 {
   0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
-  7%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.22, .55, .40, 1); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.34, .05, .36, 1); }
   100% { transform: rotate(var(--spin-to, 0deg)); }
 }
 @keyframes wheel-spin-1 {
   0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
-  7%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.18, .60, .40, 1); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.30, .04, .38, 1); }
   100% { transform: rotate(var(--spin-to, 0deg)); }
 }
 @keyframes wheel-spin-2 {
   0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
-  7%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.15, .65, .42, 1); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.27, .03, .40, 1); }
   100% { transform: rotate(var(--spin-to, 0deg)); }
 }
 @keyframes wheel-spin-3 {
   0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
-  7%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.12, .70, .44, 1); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.24, .02, .42, 1); }
   100% { transform: rotate(var(--spin-to, 0deg)); }
 }
 @keyframes wheel-spin-4 {
   0%   { transform: rotate(var(--spin-from, 0deg));   animation-timing-function: cubic-bezier(.35, 0, .7, .45); }
-  7%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.10, .74, .46, 1); }
+  9%   { transform: rotate(var(--spin-windup, 0deg)); animation-timing-function: cubic-bezier(.21, .02, .44, 1); }
   100% { transform: rotate(var(--spin-to, 0deg)); }
 }
 .wheel-svg {
