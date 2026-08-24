@@ -70,6 +70,14 @@ describe("audio", () => {
     expect((ctx as any).createOscillator).not.toHaveBeenCalled();
   });
 
+  it("win synthesizes the cash-register style when winStyle is cash (no URL)", () => {
+    const ctx = mockCtx();
+    const audio = createAudio(() => ctx, { winStyle: "cash" });
+    audio.win();
+    expect((ctx as any).createOscillator).toHaveBeenCalled();
+    expect((ctx as any)._osc.start).toHaveBeenCalled();
+  });
+
   it("seam synthesizes a chime when no seam sound is configured", () => {
     const ctx = mockCtx();
     const audio = createAudio(() => ctx, {});

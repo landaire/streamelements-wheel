@@ -10,6 +10,7 @@ export type WheelStyle = "halfwheel" | "fullwheel";
 export type HubMode = "icon" | "image" | "text";
 export type HubTextStyle = "fit" | "curve";
 export type CommandPermission = "mods" | "broadcaster";
+export type SeamResult = "respin" | "both";
 export type AddEntrySource = "input" | "username";
 
 export interface WheelConfig {
@@ -25,6 +26,7 @@ export interface WheelConfig {
   magnetism: boolean;
   seamBandDeg: Degrees;
   spinForceVariance: number; // 0..1: how much spin force (turns + decel curve) varies per spin
+  seamResult: SeamResult; // magnetism-off: "respin" (on the line) or "both" adjacent slices win
   respinText: string;
   spinCommand: string;
   scheme: ColorScheme;
@@ -36,6 +38,8 @@ export interface WheelConfig {
   winSound: string | undefined;
   tickSound: string | undefined;
   seamSound: string | undefined;
+  winSoundStyle: string; // "chime" | "cash": which synthesized win sound to use
+
   disableConfetti: boolean;
   normalizeWeights: boolean;
   disableSound: boolean;
@@ -139,6 +143,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       magnetism: bool(fieldData.magnetism, FIELD_DEFAULTS.magnetism as boolean),
       seamBandDeg: deg(num(fieldData.seamBand, FIELD_DEFAULTS.seamBand as number)),
       spinForceVariance: Math.max(0, Math.min(1, num(fieldData.spinForceVariance, FIELD_DEFAULTS.spinForceVariance as number))),
+      seamResult: fieldData.seamResult === "both" ? "both" : "respin",
       respinText: str(fieldData.respinText, FIELD_DEFAULTS.respinText as string),
       spinCommand: str(fieldData.spinCommand, FIELD_DEFAULTS.spinCommand as string),
       scheme: resolveScheme(fieldData),
@@ -150,6 +155,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       winSound: opt(fieldData.soundWin),
       tickSound: opt(fieldData.soundTick),
       seamSound: opt(fieldData.soundSeam),
+      winSoundStyle: fieldData.winSoundStyle === "cash" ? "cash" : "chime",
       disableConfetti: bool(fieldData.disableConfetti, FIELD_DEFAULTS.disableConfetti as boolean),
       normalizeWeights,
       disableSound: bool(fieldData.disableSound, FIELD_DEFAULTS.disableSound as boolean),

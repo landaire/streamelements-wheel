@@ -75,7 +75,7 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
     opts.audioCtxFactory ?? (typeof AudioContext !== "undefined" ? () => new AudioContext() : undefined);
   const audio: AudioEngine =
     audioCtxFactory !== undefined
-      ? createAudio(audioCtxFactory, { winSound: cfg.winSound, tickSound: cfg.tickSound, seamSound: cfg.seamSound })
+      ? createAudio(audioCtxFactory, { winSound: cfg.winSound, tickSound: cfg.tickSound, seamSound: cfg.seamSound, winStyle: cfg.winSoundStyle === "cash" ? "cash" : "chime" })
       : { tick() {}, win() {}, seam() {} };
 
   const confetti = createConfetti(
@@ -97,6 +97,13 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
         if (result.kind === "winner") {
           const text = cfg.slices[result.slice as number]!.text;
           announce.winner(text);
+          if (!cfg.disableSound) audio.win();
+          if (!cfg.disableConfetti) confetti.fire();
+        } else if (cfg.seamResult === "both") {
+          // On the line counts as both adjacent slices winning: announce both, celebrate.
+          const a = cfg.slices[result.between[0] as number]!.text;
+          const bText = cfg.slices[result.between[1] as number]!.text;
+          announce.winner(a + " + " + bText);
           if (!cfg.disableSound) audio.win();
           if (!cfg.disableConfetti) confetti.fire();
         } else {

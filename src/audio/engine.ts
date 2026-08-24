@@ -4,10 +4,13 @@ export interface AudioEngine {
   seam(): void;
 }
 
-export interface SoundUrls {
+export type WinStyle = "chime" | "cash";
+
+export interface AudioConfig {
   winSound?: string | undefined;
   tickSound?: string | undefined;
   seamSound?: string | undefined;
+  winStyle?: WinStyle | undefined; // which synth to use for the win cue when no winSound URL is set
 }
 
 // All sounds are synthesized in code via the Web Audio API and generated on the fly, so the
@@ -34,7 +37,7 @@ interface NoiseOpts {
   atSec?: number;
 }
 
-export function createAudio(ctxFactory: () => AudioContext, cfg: SoundUrls): AudioEngine {
+export function createAudio(ctxFactory: () => AudioContext, cfg: AudioConfig): AudioEngine {
   let ctx: AudioContext | undefined;
   let master: GainNode | undefined;
   const ac = (): AudioContext => {
@@ -117,6 +120,21 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: SoundUrls): Aud
     });
   };
 
+  // Cash register "cha-CHING": a drawer thunk and click, then two bright metallic bell dings
+  // (inharmonic bell partials), the second higher and ringing longer. Money, baby.
+  const cashRegisterSynth = (): void => {
+    tone({ freq: 200, glideToHz: 90, type: "sine", peak: 0.18, attackSec: 0.002, decaySec: 0.11 });
+    noise({ durSec: 0.035, filterHz: 1400, q: 0.7, peak: 0.1 });
+    const ding = (atSec: number, base: number, gain: number, decaySec: number): void => {
+      const partials = [1, 2.76, 5.4, 8.9]; // struck-bell inharmonic ratios
+      partials.forEach((ratio, i) => {
+        tone({ freq: base * ratio, type: "sine", peak: gain * (i === 0 ? 1 : 0.4 / i), attackSec: 0.002, decaySec: decaySec * (i === 0 ? 1 : 0.6), atSec });
+      });
+    };
+    ding(0.04, 1050, 0.16, 0.35);
+    ding(0.15, 1400, 0.18, 0.6);
+  };
+
   // On-the-line chime: same impact-plus-ring shape as the win, but a suspended C-F-G cluster
   // struck together (no clear major resolution) so it reads as neutral suspense, not a win
   // and not a fail buzzer -- matching the original's ambiguous sustained bell.
@@ -132,7 +150,10 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: SoundUrls): Aud
 
   return {
     tick: () => (cfg.tickSound !== undefined ? playUrl(cfg.tickSound) : tickSynth()),
-    win: () => (cfg.winSound !== undefined ? playUrl(cfg.winSound) : winSynth()),
+    win: () => {
+      if (cfg.winSound !== undefined) return playUrl(cfg.winSound);
+      return cfg.winStyle === "cash" ? cashRegisterSynth() : winSynth();
+    },
     seam: () => (cfg.seamSound !== undefined ? playUrl(cfg.seamSound) : seamSynth()),
   };
 }
