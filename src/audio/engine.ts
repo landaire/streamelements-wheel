@@ -120,24 +120,31 @@ export function createAudio(ctxFactory: () => AudioContext, cfg: AudioConfig): A
     });
   };
 
-  // MONEY: a bright "cha-CHING" register bell, then a cascade of coins clinking out. The
-  // bell is two struck-bell dings; the cascade is a run of short bright metallic pings at
-  // scattered pitches and slightly irregular timing, like coins tumbling into a tray.
+  // "cha-CHING": the classic register bell. Two quick bright broadband hits (cha, then
+  // ching) a fifth of a second apart, and on the ching a rich metallic bell rings out for
+  // ~1.6s -- a ~1250 Hz fundamental with bright partials up to ~8 kHz, matching a real
+  // cash-register ring. Money.
   const cashRegisterSynth = (): void => {
+    // Struck-bell voice: a fundamental plus bright, mostly-inharmonic partials.
     const bell = (atSec: number, base: number, gain: number, decaySec: number): void => {
-      [1, 2.76, 5.4].forEach((ratio, i) => {
-        tone({ freq: base * ratio, type: "sine", peak: gain * (i === 0 ? 1 : 0.35 / i), attackSec: 0.002, decaySec: decaySec * (i === 0 ? 1 : 0.55), atSec });
-      });
+      const partials: [number, number][] = [
+        [1, 1],
+        [2.01, 0.55],
+        [2.68, 0.4],
+        [3.7, 0.28],
+        [4.72, 0.2],
+        [6.4, 0.13],
+      ];
+      for (const [ratio, g] of partials) {
+        tone({ freq: base * ratio, type: "sine", peak: gain * g, attackSec: 0.001, decaySec: decaySec * (ratio < 1.5 ? 1 : 0.55), atSec });
+      }
     };
-    bell(0.0, 1050, 0.13, 0.35);
-    bell(0.1, 1500, 0.16, 0.7);
-    const coin = (atSec: number, base: number, gain: number): void => {
-      [1, 2.4, 4.2].forEach((ratio, i) => {
-        tone({ freq: base * ratio, type: "sine", peak: gain * (i === 0 ? 1 : 0.3 / i), attackSec: 0.001, decaySec: 0.11 - i * 0.02, atSec });
-      });
-    };
-    const pitches = [2637, 3136, 2093, 3520, 2794, 2349, 3136, 2637, 3520, 2960, 2093, 2794, 3136, 2349];
-    pitches.forEach((freq, i) => coin(0.22 + i * 0.05 + (i % 3) * 0.006, freq, 0.055));
+    // cha: a short bright hit (broadband click + a quick bell)
+    noise({ durSec: 0.035, filterHz: 3200, q: 0.5, peak: 0.13, atSec: 0 });
+    bell(0.0, 1050, 0.1, 0.22);
+    // CHING: a second bright hit and the long ringing bell
+    noise({ durSec: 0.05, filterHz: 3600, q: 0.5, peak: 0.14, atSec: 0.16 });
+    bell(0.16, 1245, 0.17, 1.6);
   };
 
   // On-the-line chime: same impact-plus-ring shape as the win, but a suspended C-F-G cluster
