@@ -23,11 +23,12 @@ export const SPIN_TURNS_MIN = 4; // full rotations at force 0
 export const SPIN_TURNS_MAX = 8; // full rotations at force 1
 
 // The forward-pull deceleration curve is chosen from a fixed set of ease-out timing
-// functions defined statically in wheel.css as @keyframes wheel-spin-0..N. They run from a
-// calm settle (bucket 0: ~95% of travel done by 60% of the duration) to a suspenseful late
-// stop (bucket N: only ~76% done by then, so the wheel keeps moving into the final stretch).
-// The buckets are static because a per-keyframe animation-timing-function does not resolve a
-// CSS custom property, so the curve cannot be passed in as a var at spin time.
+// functions defined statically in wheel.css as @keyframes wheel-spin-0..N. Every curve
+// shares a long, gentle tail so the wheel always glides to a slow stop; the buckets differ
+// only in early inertia. The per-spin "some spins go longer" variation comes from the turn
+// count, not from a harder stop. The buckets are static because a per-keyframe
+// animation-timing-function does not resolve a CSS custom property, so the curve cannot be
+// passed in as a var at spin time.
 export const FORCE_BUCKETS = 5;
 
 const clamp01 = (n: number): number => Math.max(0, Math.min(1, n));
