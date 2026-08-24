@@ -820,6 +820,10 @@ function demoHtml() {
   }
   // The visual item list replaces the raw advancedConfig JSON in the playground.
   if (controls.advancedConfig) controls.advancedConfig.row.style.display = "none";
+  // Importing in the playground is done with "Paste config code" (which populates every
+  // control so you can then edit); the raw importConfig field would instead override the
+  // controls, so hide it here. Its group ("Import") then holds only the empty-state note.
+  if (controls.importConfig) controls.importConfig.row.style.display = "none";
 
   var weightsBody = groupBody("Computed Slice Weights");
 

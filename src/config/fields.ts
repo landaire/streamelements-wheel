@@ -16,7 +16,7 @@ export interface FieldDef {
 }
 
 export const FIELD_DEFS: readonly FieldDef[] = [
-  { key: "importConfig", type: "text", label: "Import config code", value: "", group: "Import", hint: "Paste a config code (or the full share URL) from the playground to apply an entire setup at once. When set, it overrides every individual setting below." },
+  { key: "importConfig", type: "text", label: "Import config code", value: "", group: "Wheel Settings", hint: "Paste a config code (or the full share URL) from the playground to apply an entire setup at once. When set, it overrides every individual setting below." },
   { key: "scaleWidget", type: "slider", label: "Widget scale", value: 1, min: 0.5, max: 3, step: 0.1, group: "Wheel Settings" },
   { key: "wheelStyle", type: "dropdown", label: "Wheel style", value: "fullwheel", options: { halfwheel: "Half Wheel", fullwheel: "Full Wheel" }, group: "Wheel Settings" },
   { key: "wheelTitle", type: "text", label: "Title", value: "50 points to spin", group: "Wheel Settings" },
