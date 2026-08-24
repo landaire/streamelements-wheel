@@ -225,9 +225,10 @@
   background: var(--plate-bg, #ffe1e7); color: var(--title-color, #b64e5f);
   font-weight: 600; font-size: 15px; white-space: nowrap; text-align: center;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
-  /* min-width is set to the widest label so the slot-machine roll never resizes the pill;
-     a fast transition animates the rare change (e.g. a two-option winner). */
-  transition: min-width 0.12s ease;
+  box-sizing: border-box;
+  /* The pill's width is driven in JS: it grows instantly to fit a wider label and only
+     shrinks after the title settles (debounced), so the slot-machine roll never jitters. */
+  transition: width 0.1s ease;
 }
 .set-style-halfwheel .wheel-clip { clip-path: inset(0 0 40% 0); }
 .confetti {

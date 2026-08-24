@@ -305,30 +305,41 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   };
   syncTitleVisibility(cfg.title);
 
-  // Keep the pill from resizing as the slot-machine roll cycles labels: its min-width is the
-  // widest of the title, the current text, and every option (plus a buffer for font metrics),
-  // and it is only recomputed on a debounce so the rapid roll never resizes it mid-spin. A
-  // CSS transition smooths the one change that does happen (a wider two-option winner).
-  const measureCtx = doc.createElement("canvas").getContext("2d");
-  const fitTitleWidth = (): void => {
-    if (!measureCtx) return;
-    const cs = getComputedStyle(title);
-    if (!cs.fontSize || cs.fontSize === "0px") return;
-    measureCtx.font = cs.fontWeight + " " + cs.fontSize + " " + cs.fontFamily;
-    let max = Math.max(measureCtx.measureText(cfg.title).width, measureCtx.measureText(title.textContent ?? "").width);
-    for (const s of cfg.slices) max = Math.max(max, measureCtx.measureText(s.text).width);
-    titleWrap.style.minWidth = Math.ceil(max * 1.04) + 16 + "px";
+  // Pill width: grow instantly to fit a wider label, shrink only after the title settles
+  // (debounced), so the slot-machine roll never jitters the pill. A hidden clone of the pill
+  // measures a label's natural width (box-sizing-correct, unaffected by min-width/transform).
+  const measurer = el(doc, "title-wrap");
+  measurer.style.cssText = "position:absolute; visibility:hidden; left:-9999px; top:0; width:auto; min-width:0; transform:none; transition:none;";
+  dom.container.appendChild(measurer);
+  const measureWidth = (text: string): number => {
+    measurer.textContent = text.trim().length > 0 ? text : " ";
+    return measurer.offsetWidth;
   };
-  let titleSizeTimer: ReturnType<typeof setTimeout> | undefined;
-  const fitTitleWidthDebounced = (): void => {
-    if (titleSizeTimer) clearTimeout(titleSizeTimer);
-    titleSizeTimer = setTimeout(fitTitleWidth, 220);
+  let pillW = 0;
+  let shrinkTimer: ReturnType<typeof setTimeout> | undefined;
+  const setPillWidth = (w: number): void => {
+    pillW = w;
+    titleWrap.style.width = w + "px";
+  };
+  const updatePillWidth = (text: string): void => {
+    const want = measureWidth(text);
+    if (want >= pillW) {
+      if (shrinkTimer) { clearTimeout(shrinkTimer); shrinkTimer = undefined; } // cancel a pending shrink
+      setPillWidth(want); // grow instantly
+    } else {
+      if (shrinkTimer) clearTimeout(shrinkTimer);
+      shrinkTimer = setTimeout(() => setPillWidth(measureWidth(title.textContent ?? "")), 400); // shrink debounced
+    }
+  };
+  const resetPillWidth = (): void => {
+    if (shrinkTimer) { clearTimeout(shrinkTimer); shrinkTimer = undefined; }
+    setPillWidth(measureWidth(title.textContent ?? ""));
   };
 
   const fitTextEl = centerpiece.querySelector<HTMLElement>(".hub-text-fit");
   const refit = (): void => {
     fitStage();
-    fitTitleWidth();
+    resetPillWidth();
     if (fitTextEl) fitHubText(fitTextEl);
     refitEntries(dom);
   };
@@ -346,7 +357,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
     setTitle: (text: string): void => {
       title.textContent = text;
       syncTitleVisibility(text);
-      fitTitleWidthDebounced(); // re-fit only once the title settles, not on every roll frame
+      updatePillWidth(text); // grow instantly, shrink debounced
     },
     refit,
   };
