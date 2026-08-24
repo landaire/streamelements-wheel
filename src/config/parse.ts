@@ -18,6 +18,8 @@ export interface WheelConfig {
   style: WheelStyle;
   title: string;
   fontFamily: string;
+  labelSizeMax: number; // largest slice-label font size (base px)
+  labelSizeMin: number; // smallest slice-label font size (base px)
   slices: Slice[];
   spinDurationSec: number;
   countdownSec: number;
@@ -131,6 +133,9 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
         ? "input"
         : (FIELD_DEFAULTS.addEntrySource as AddEntrySource);
 
+  const labelSizeMax = Math.max(8, Math.min(120, num(fieldData.labelSizeMax, FIELD_DEFAULTS.labelSizeMax as number)));
+  const labelSizeMin = Math.max(2, Math.min(labelSizeMax, num(fieldData.labelSizeMin, FIELD_DEFAULTS.labelSizeMin as number)));
+
   // Defaults sourced from FIELD_DEFAULTS (src/config/fields.ts), the single source of
   // truth also used to generate the widget's fields.json schema.
   return {
@@ -140,6 +145,8 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       style,
       title: str(fieldData.wheelTitle, FIELD_DEFAULTS.wheelTitle as string),
       fontFamily: str(fieldData.fontFamily, FIELD_DEFAULTS.fontFamily as string).trim(),
+      labelSizeMax,
+      labelSizeMin,
       slices,
       spinDurationSec: num(fieldData.spinDuration, FIELD_DEFAULTS.spinDuration as number),
       countdownSec: num(fieldData.countdownTime, FIELD_DEFAULTS.countdownTime as number),

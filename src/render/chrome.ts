@@ -113,14 +113,20 @@ const LABEL_TANGENT = 0.86; // fraction of the wedge's angular width the label m
 // length, capped by maxWidth so long text wraps) and tangentially (stacked-line height,
 // capped by the wedge's angular width). Sets that size on the element and returns it.
 // Returns MIN when R is 0 (no live layout yet, e.g. pre-attach or jsdom).
-export function fitEntryText(textEl: HTMLElement, sizeTurn: number, R: number): number {
-  if (!R) return MIN_ENTRY_FONT_PX;
+export function fitEntryText(
+  textEl: HTMLElement,
+  sizeTurn: number,
+  R: number,
+  maxPx: number = MAX_ENTRY_FONT_PX,
+  minPx: number = MIN_ENTRY_FONT_PX,
+): number {
+  if (!R) return minPx;
   const rText = LABEL_MID_R * R;
   const radialLen = LABEL_RADIAL * R;
   const tangentialWidth = 2 * rText * Math.sin(sizeTurn * Math.PI) * LABEL_TANGENT;
   textEl.style.maxWidth = radialLen + "px";
-  let lo = MIN_ENTRY_FONT_PX;
-  let hi = MAX_ENTRY_FONT_PX;
+  let lo = minPx;
+  let hi = Math.max(minPx, maxPx);
   for (let i = 0; i < 16; i++) {
     const mid = (lo + hi) / 2;
     textEl.style.fontSize = mid + "px";
@@ -135,7 +141,7 @@ export function fitEntryText(textEl: HTMLElement, sizeTurn: number, R: number): 
 // Refits every slice label, then unifies the size: the bulk of the labels share one common
 // size (the largest all of them fit), and only labels in much tighter wedges keep their own
 // smaller size. dom.container.clientWidth is 0 before attach or under jsdom, so this no-ops.
-export function refitEntries(dom: WheelDom): void {
+export function refitEntries(dom: WheelDom, maxPx: number = MAX_ENTRY_FONT_PX, minPx: number = MIN_ENTRY_FONT_PX): void {
   const R = dom.container.clientWidth / 2;
   if (!R) return;
   const els: HTMLElement[] = [];
@@ -145,7 +151,7 @@ export function refitEntries(dom: WheelDom): void {
     if (!Number.isFinite(sizeTurn)) continue;
     const textEl = entry.querySelector<HTMLElement>(".entry-text");
     if (!textEl) continue;
-    fits.push(fitEntryText(textEl, sizeTurn, R));
+    fits.push(fitEntryText(textEl, sizeTurn, R, maxPx, minPx));
     els.push(textEl);
   }
   if (els.length === 0) return;
@@ -341,7 +347,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
     fitStage();
     resetPillWidth();
     if (fitTextEl) fitHubText(fitTextEl);
-    refitEntries(dom);
+    refitEntries(dom, cfg.labelSizeMax, cfg.labelSizeMin);
   };
   refit();
   if (typeof window !== "undefined") {
