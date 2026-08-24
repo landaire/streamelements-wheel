@@ -227,7 +227,37 @@ function buildCurvedText(doc: Document, text: string): SVGElement {
 // A simple plumbob gem for the fixed pointer: one flat gem body with a single vertical
 // gradient (scheme --gem-* colors, so it matches the palette), a plain white outline, and
 // one soft top glint. Gradient id is per-call so mounted widgets never share a def id.
-function buildEmeraldPointer(doc: Document): SVGElement {
+// The gem silhouette as a path, with only its bottom tip rounded by `tipRadius` (viewBox units;
+// 0 = a sharp point). The two edges meeting at the tip are pulled back by the radius and joined
+// with a quadratic through the original tip, so the rest of the gem keeps its crisp facets.
+// Viewbox tip-radius units per degree of on-the-line tolerance, when the tip is derived from
+// the seam zone. Tuned so a typical zone yields a subtle round and a wide one caps out softly.
+const POINTER_TIP_PER_SEAM_DEG = 2;
+
+// The tip radius actually drawn: the manual slider, or derived from the on-the-line zone width
+// when pointerTipFromSeam is set, so a more forgiving zone reads as a softer tip.
+export function effectivePointerTipRadius(cfg: WheelConfig): number {
+  if (!cfg.pointerTipFromSeam) return cfg.pointerTipRadius;
+  return Math.max(0, Math.min(30, (cfg.seamBandDeg as number) * POINTER_TIP_PER_SEAM_DEG));
+}
+
+export function pointerSilhouettePath(tipRadius: number): string {
+  const head = "M30,0 L70,0 L76,20 L94,56";
+  const tail = "L6,56 L24,20 Z";
+  if (tipRadius <= 0) return `${head} L50,138 ${tail}`;
+  const ax = 94, ay = 56, tx = 50, ty = 138, bx = 6, by = 56;
+  const inLen = Math.hypot(tx - ax, ty - ay);
+  const outLen = Math.hypot(bx - tx, by - ty);
+  const r = Math.min(tipRadius, inLen * 0.9, outLen * 0.9);
+  const n = (v: number): string => Math.round(v * 100) / 100 + "";
+  const p1x = tx - (r * (tx - ax)) / inLen;
+  const p1y = ty - (r * (ty - ay)) / inLen;
+  const p2x = tx + (r * (bx - tx)) / outLen;
+  const p2y = ty + (r * (by - ty)) / outLen;
+  return `${head} L${n(p1x)},${n(p1y)} Q50,138 ${n(p2x)},${n(p2y)} ${tail}`;
+}
+
+function buildEmeraldPointer(doc: Document, tipRadius: number): SVGElement {
   const uid = Math.random().toString(36).slice(2);
   const svg = doc.createElementNS(SVG_NS, "svg") as SVGSVGElement;
   svg.setAttribute("viewBox", "0 0 100 140");
@@ -258,10 +288,17 @@ function buildEmeraldPointer(doc: Document): SVGElement {
     if (extra) for (const [k, v] of Object.entries(extra)) p.setAttribute(k, v);
     svg.appendChild(p);
   };
+  const path = (d: string, fill: string, extra?: Record<string, string>): void => {
+    const p = doc.createElementNS(SVG_NS, "path");
+    p.setAttribute("d", d);
+    p.setAttribute("fill", fill);
+    if (extra) for (const [k, v] of Object.entries(extra)) p.setAttribute(k, v);
+    svg.appendChild(p);
+  };
 
-  const silhouette = "30,0 70,0 76,20 94,56 50,138 6,56 24,20";
-  poly(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.12) translate(-50 -60)" }); // plain white outline
-  poly(silhouette, `url(#gem-${uid})`); // gem body
+  const silhouette = pointerSilhouettePath(tipRadius);
+  path(silhouette, "#ffffff", { transform: "translate(50 60) scale(1.12) translate(-50 -60)" }); // plain white outline
+  path(silhouette, `url(#gem-${uid})`); // gem body
   poly("30,4 70,4 73,20 27,20", "rgba(255,255,255,0.22)"); // soft top glint
 
   return svg;
@@ -328,7 +365,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
   const centerpiece = el(doc, "centerpiece");
   buildHub(doc, centerpiece, cfg);
   const headpiece = el(doc, "headpiece"); // fixed pointer at 12 o'clock; does not rotate
-  headpiece.appendChild(buildEmeraldPointer(doc));
+  headpiece.appendChild(buildEmeraldPointer(doc, effectivePointerTipRadius(cfg)));
   details.appendChild(centerpiece);
   details.appendChild(headpiece);
   dom.container.appendChild(details);

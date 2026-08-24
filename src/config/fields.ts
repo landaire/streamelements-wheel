@@ -65,6 +65,8 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "colorSecondary", type: "colorpicker", label: "Secondary color", value: "#c9a8f0", group: "Colors", hint: "Auto mode: drives the lighter slices, title pill, and hub center." },
   { key: "centerIcon", type: "dropdown", label: "Center icon", value: "coin", options: { coin: "Coin", heart: "Heart", star: "Star", skull: "Skull", diamond: "Diamond" }, group: "Colors" },
   { key: "gemMatchScheme", type: "checkbox", label: "Gem matches color scheme", value: true, group: "Colors", hint: "The pointer gem derives its color from the palette. Uncheck to set a custom gem color." },
+  { key: "pointerTipRadius", type: "slider", label: "Pointer tip roundness", value: 6, min: 0, max: 30, step: 1, group: "Colors", hint: "Rounds the tip of the pointer. 0 is a sharp point; higher is softer." },
+  { key: "pointerTipFromSeam", type: "checkbox", label: "Tip roundness follows the on-the-line zone", value: false, group: "Colors", hint: "Derive the pointer tip roundness from the on-the-line zone width, so a more forgiving zone reads as a softer tip. Overrides the slider above." },
   { key: "colorGem", type: "colorpicker", label: "Gem color", value: "#8a4bd8", group: "Colors", hint: "Applies when 'Gem matches color scheme' is off." },
   { key: "colorSliceEven", type: "colorpicker", label: "Slice color A (darker)", value: "#ab4bb8", group: "Colors", hint: "Color pickers apply when Color scheme = Custom." },
   { key: "colorSliceOdd", type: "colorpicker", label: "Slice color B (lighter)", value: "#d9a9e8", group: "Colors" },

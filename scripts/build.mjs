@@ -746,9 +746,13 @@ function demoHtml() {
     // Gem color picker applies only when the gem is not matching the scheme.
     var gemMatch = controls.gemMatchScheme ? controls.gemMatchScheme.el.checked : true;
     if (controls.colorGem) controls.colorGem.row.style.display = gemMatch ? "none" : "";
+    // Manual tip-roundness slider is hidden when the tip is derived from the on-the-line zone.
+    var tipFromSeam = controls.pointerTipFromSeam ? controls.pointerTipFromSeam.el.checked : false;
+    if (controls.pointerTipRadius) controls.pointerTipRadius.row.style.display = tipFromSeam ? "none" : "";
   }
   if (controls.colorScheme) controls.colorScheme.el.addEventListener("change", syncColorVisibility);
   if (controls.gemMatchScheme) controls.gemMatchScheme.el.addEventListener("change", syncColorVisibility);
+  if (controls.pointerTipFromSeam) controls.pointerTipFromSeam.el.addEventListener("change", syncColorVisibility);
   syncColorVisibility();
 
   // Zoom the hub image live as the slider moves (the debounced remount still persists it).

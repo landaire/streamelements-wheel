@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { parseConfig, type WheelConfig } from "../src/config/parse.js";
 import { buildWheel } from "../src/render/wheel.js";
-import { addChrome, labelBand } from "../src/render/chrome.js";
+import { addChrome, labelBand, pointerSilhouettePath, effectivePointerTipRadius } from "../src/render/chrome.js";
 import { buildWidget } from "../src/app/builder.js";
 import { layout, sliceAtAngle } from "../src/model/geometry.js";
 import { deg } from "../src/model/units.js";
@@ -219,6 +219,37 @@ describe("labelBand (hub-size aware label placement)", () => {
       const inner = band.midR - band.radialFrac / 2;
       expect(inner).toBeGreaterThanOrEqual(pct / 100);
     }
+  });
+});
+
+describe("pointerSilhouettePath (rounded tip)", () => {
+  it("keeps a sharp tip at radius 0 and rounds it with a quadratic above 0", () => {
+    const sharp = pointerSilhouettePath(0);
+    expect(sharp).toContain("L50,138"); // straight line to the tip point
+    expect(sharp).not.toContain("Q");
+    const round = pointerSilhouettePath(8);
+    expect(round).toContain("Q50,138"); // quadratic curve through the original tip
+    expect(round).not.toContain("L50,138");
+  });
+
+  it("buildHub pointer honors the configured tip radius", () => {
+    const r = parseConfig({ sliceEntries: "A, B", pointerTipRadius: 10 });
+    if (r.kind !== "ok") throw new Error("bad");
+    expect(r.value.pointerTipRadius).toBe(10);
+    const dom = buildWheel(document, r.value);
+    addChrome(document, dom, r.value);
+    const d = dom.container.querySelector(".headpiece-gem path")!.getAttribute("d")!;
+    expect(d).toContain("Q50,138");
+  });
+
+  it("derives the tip radius from the on-the-line zone when enabled", () => {
+    const manual = parseConfig({ sliceEntries: "A, B", pointerTipRadius: 6, pointerTipFromSeam: false });
+    const fromSeam = parseConfig({ sliceEntries: "A, B", seamBand: 5, pointerTipFromSeam: true });
+    const wide = parseConfig({ sliceEntries: "A, B", seamBand: 40, pointerTipFromSeam: true });
+    if (manual.kind !== "ok" || fromSeam.kind !== "ok" || wide.kind !== "ok") throw new Error("bad");
+    expect(effectivePointerTipRadius(manual.value)).toBe(6); // manual slider
+    expect(effectivePointerTipRadius(fromSeam.value)).toBe(10); // 5 deg * 2
+    expect(effectivePointerTipRadius(wide.value)).toBe(30); // clamped
   });
 });
 

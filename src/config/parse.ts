@@ -40,6 +40,8 @@ export interface WheelConfig {
   spinCommand: string;
   scheme: ColorScheme;
   centerIcon: string;
+  pointerTipRadius: number; // rounds the pointer tip (0 = sharp point)
+  pointerTipFromSeam: boolean; // derive the tip roundness from the on-the-line zone width
   hubMode: HubMode;
   hubSize: number; // hub diameter as a percent of the wheel
   hubImage: string;
@@ -183,6 +185,8 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       spinCommand: str(fieldData.spinCommand, FIELD_DEFAULTS.spinCommand as string),
       scheme: resolveScheme(fieldData),
       centerIcon: str(fieldData.centerIcon, FIELD_DEFAULTS.centerIcon as string),
+      pointerTipRadius: Math.max(0, Math.min(30, num(fieldData.pointerTipRadius, FIELD_DEFAULTS.pointerTipRadius as number))),
+      pointerTipFromSeam: bool(fieldData.pointerTipFromSeam, FIELD_DEFAULTS.pointerTipFromSeam as boolean),
       hubMode,
       hubSize: Math.max(14, Math.min(50, num(fieldData.hubSize, FIELD_DEFAULTS.hubSize as number))),
       hubImage: str(fieldData.hubImage, FIELD_DEFAULTS.hubImage as string),
