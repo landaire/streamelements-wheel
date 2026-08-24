@@ -29,15 +29,15 @@ describe("parseConfig", () => {
     expect(r.kind).toBe("ok");
     if (r.kind === "ok") expect(r.value.winSound).toBeUndefined();
   });
-  it("errors when the slice list is missing", () => {
+  it("falls back to the default slice list when sliceEntries is missing (back-compat)", () => {
     const r = parseConfig({});
-    expect(r.kind).toBe("error");
-    if (r.kind === "error") expect(r.errors.some((e) => e.kind === "missing-field")).toBe(true);
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") expect(r.value.slices.length).toBeGreaterThan(0);
   });
-  it("errors when sliceEntries is a non-string", () => {
+  it("falls back to the default slice list when sliceEntries is a non-string", () => {
     const r = parseConfig({ sliceEntries: 5 });
-    expect(r.kind).toBe("error");
-    if (r.kind === "error") expect(r.errors.some((e) => e.kind === "bad-field-type")).toBe(true);
+    expect(r.kind).toBe("ok");
+    if (r.kind === "ok") expect(r.value.slices.length).toBeGreaterThan(0);
   });
   it("coerces a stringified numeric field instead of dropping it", () => {
     const r = parseConfig({ sliceEntries: "A, B", spinDuration: "7" });

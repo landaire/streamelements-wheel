@@ -15,9 +15,10 @@ describe("mountWidget", () => {
     }
     vi.useRealTimers();
   });
-  it("renders an error panel for a missing slice list", () => {
+  it("renders the default wheel (no error) when the slice list is missing (back-compat)", () => {
     const handle = mountWidget(document, { fieldData: {} });
-    expect("error" in handle).toBe(true);
-    expect(document.querySelector(".wheel-error")).not.toBeNull();
+    expect("error" in handle).toBe(false);
+    expect(document.querySelector(".wheel-error")).toBeNull();
+    expect(document.querySelector(".wheel-container")).not.toBeNull();
   });
 });

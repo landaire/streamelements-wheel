@@ -77,14 +77,14 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
     const parsedAdvanced = parseAdvancedConfig(advancedConfigRaw);
     if (parsedAdvanced.kind === "error") errors.push(...parsedAdvanced.errors);
     else slices = resolveAdvancedWeights(parsedAdvanced.value);
-  } else if (fieldData.sliceEntries === undefined) {
-    errors.push({ kind: "missing-field", key: "sliceEntries" });
-  } else if (typeof fieldData.sliceEntries === "string") {
-    const parsed = parseSliceList(fieldData.sliceEntries);
+  } else {
+    // Back-compat: a missing or blank sliceEntries falls back to the default list so an old
+    // or partial config always renders, never hard-erroring on an absent field.
+    const rawSlices = str(fieldData.sliceEntries, "").trim();
+    const sliceText = rawSlices.length > 0 ? rawSlices : (FIELD_DEFAULTS.sliceEntries as string);
+    const parsed = parseSliceList(sliceText);
     if (parsed.kind === "error") errors.push(...parsed.errors);
     else slices = resolveWeights(parsed.value, normalizeWeights);
-  } else {
-    errors.push({ kind: "bad-field-type", key: "sliceEntries" });
   }
 
   if (errors.length > 0) return { kind: "error", errors };
@@ -143,7 +143,8 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       magnetism: bool(fieldData.magnetism, FIELD_DEFAULTS.magnetism as boolean),
       seamBandDeg: deg(num(fieldData.seamBand, FIELD_DEFAULTS.seamBand as number)),
       spinForceVariance: Math.max(0, Math.min(1, num(fieldData.spinForceVariance, FIELD_DEFAULTS.spinForceVariance as number))),
-      seamResult: fieldData.seamResult === "both" ? "both" : "respin",
+      // Landing on the line counts as both slices winning by default; not a UI toggle.
+      seamResult: fieldData.seamResult === "respin" ? "respin" : "both",
       respinText: str(fieldData.respinText, FIELD_DEFAULTS.respinText as string),
       spinCommand: str(fieldData.spinCommand, FIELD_DEFAULTS.spinCommand as string),
       scheme: resolveScheme(fieldData),
