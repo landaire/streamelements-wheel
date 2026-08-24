@@ -32,6 +32,12 @@ describe("isBroadcasterOrMod", () => {
     const bc: ChatEventData = { nick: "x", tags: { badges: "broadcaster/1,subscriber/12" } };
     expect(hasCommandPermission("broadcaster", bc, "streamer")).toBe(true);
   });
+  it("accepts any moderator-variant badge (e.g. a lead moderator)", () => {
+    const leadByBadge: ChatEventData = { nick: "l", badges: [{ type: "lead-moderator", version: "1" }] };
+    const leadByTag: ChatEventData = { nick: "l", tags: { badges: "lead-moderator/1" } };
+    expect(isBroadcasterOrMod(leadByBadge, "streamer")).toBe(true);
+    expect(isBroadcasterOrMod(leadByTag, "streamer")).toBe(true);
+  });
 });
 
 describe("hasCommandPermission", () => {

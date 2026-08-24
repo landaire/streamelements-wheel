@@ -40,8 +40,13 @@ function isBroadcaster(data: ChatEventData, broadcasterUsername: string | undefi
 }
 
 function isModerator(data: ChatEventData): boolean {
+  // The IRC mod tag is set for every moderator, whatever their badge.
   if (data.tags?.mod === "1") return true;
-  return badgeNames(data).has("moderator");
+  // Also accept any moderator-type badge (moderator, and any "lead-moderator"-style variant).
+  for (const name of badgeNames(data)) {
+    if (name.includes("moderator")) return true;
+  }
+  return false;
 }
 
 export function isBroadcasterOrMod(data: ChatEventData, broadcasterUsername: string | undefined): boolean {
