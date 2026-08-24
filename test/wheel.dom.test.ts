@@ -1,7 +1,8 @@
-import { describe, it, expect } from "vitest";
-import { parseConfig } from "../src/config/parse.js";
+import { describe, it, expect, vi } from "vitest";
+import { parseConfig, type WheelConfig } from "../src/config/parse.js";
 import { buildWheel } from "../src/render/wheel.js";
 import { addChrome } from "../src/render/chrome.js";
+import { buildWidget } from "../src/app/builder.js";
 import { layout, sliceAtAngle } from "../src/model/geometry.js";
 import { deg } from "../src/model/units.js";
 
@@ -204,5 +205,26 @@ describe("hub rendering", () => {
     const dom = buildWheel(document, r.value);
     addChrome(document, dom, r.value);
     expect(dom.container.querySelector(".centerpiece .center-icon.cb-heart")).not.toBeNull();
+  });
+});
+
+describe("widget lifecycle", () => {
+  const okCfg = (fd: Record<string, unknown>): WheelConfig => {
+    const r = parseConfig(fd);
+    if (r.kind !== "ok") throw new Error("bad cfg");
+    return r.value;
+  };
+
+  it("dispose removes the window resize listener it registered (no leak on rebuild)", () => {
+    const add = vi.spyOn(window, "addEventListener");
+    const remove = vi.spyOn(window, "removeEventListener");
+    const w = buildWidget(document, okCfg({ sliceEntries: "A, B, C" }), {});
+    const added = add.mock.calls.filter((c) => c[0] === "resize").length;
+    expect(added).toBeGreaterThanOrEqual(1);
+    w.dispose();
+    const removed = remove.mock.calls.filter((c) => c[0] === "resize").length;
+    expect(removed).toBe(added); // every resize listener added is removed on dispose
+    add.mockRestore();
+    remove.mockRestore();
   });
 });

@@ -139,7 +139,10 @@ export function createController(
     }
     renderPending = false;
     const cfg = currentCfg();
-    if (built) rotationSeed = built.currentRotationDeg();
+    if (built) {
+      rotationSeed = built.currentRotationDeg();
+      built.dispose(); // drop the prior widget's window listener before replacing its DOM
+    }
     slot.replaceChildren();
     built = buildWidget(doc, cfg, {
       ...(opts.rng ? { rng: opts.rng } : {}),

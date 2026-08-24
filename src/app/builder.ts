@@ -45,6 +45,7 @@ export interface BuiltWidget {
   isSpinning(): boolean;
   refit(): void;
   currentRotationDeg(): number;
+  dispose(): void; // detach listeners/timers so replacing this widget does not leak
 }
 
 // Builds one complete wheel instance (DOM, chrome, audio, confetti, animator) but does
@@ -127,7 +128,8 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
   // Click the wheel to spin it (in addition to chat commands / the demo button). The
   // animator's own guard ignores clicks while a spin is running.
   dom.container.style.cursor = "pointer";
-  dom.container.addEventListener("click", () => animator.spin());
+  const onClick = (): void => animator.spin();
+  dom.container.addEventListener("click", onClick);
 
   return {
     container: dom.container,
@@ -135,5 +137,9 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
     isSpinning: () => animator.isSpinning(),
     refit: () => chrome.refit(),
     currentRotationDeg: () => animator.currentRotationDeg(),
+    dispose: (): void => {
+      chrome.dispose();
+      dom.container.removeEventListener("click", onClick);
+    },
   };
 }

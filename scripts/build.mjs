@@ -1146,6 +1146,9 @@ function demoHtml() {
   }
 
   function remountWheel() {
+    // Dispose the previous mount first so its window resize listener does not accumulate as
+    // the user tweaks controls (the playground remounts on every change).
+    if (currentHandle && currentHandle.dispose) currentHandle.dispose();
     document.querySelectorAll(".wheel-container, .wheel-error").forEach(function (e) { e.remove(); });
     syncSliceFieldFromItems();
     var fieldData = collectFieldData();

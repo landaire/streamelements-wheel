@@ -5,6 +5,7 @@ export interface Chrome {
   title: HTMLElement;
   setTitle(text: string): void;
   refit(): void;
+  dispose(): void; // remove the window resize listener + pending timers so a rebuilt widget does not leak
 }
 
 const SVG_NS = "http://www.w3.org/2000/svg";
@@ -383,5 +384,9 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
       updatePillWidth(text); // grow instantly, shrink debounced
     },
     refit,
+    dispose: (): void => {
+      if (typeof window !== "undefined") window.removeEventListener("resize", refit);
+      if (shrinkTimer) { clearTimeout(shrinkTimer); shrinkTimer = undefined; }
+    },
   };
 }

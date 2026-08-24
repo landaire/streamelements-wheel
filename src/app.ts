@@ -30,6 +30,7 @@ export interface MountHandle {
   root: HTMLElement;
   spin(): void;
   spinCommand: string;
+  dispose(): void; // detach the mount's listeners/timers (the playground remounts repeatedly)
 }
 
 function renderConfigErrorPanel(doc: Document, errors: ConfigError[]): void {
@@ -58,7 +59,15 @@ export function mountWidget(
   // ran before attach and no-oped); rAF covers a late first paint.
   built.refit();
   if (typeof requestAnimationFrame !== "undefined") requestAnimationFrame(() => built.refit());
-  return { root: built.container, spin: () => built.spin(), spinCommand: cfg.spinCommand };
+  return {
+    root: built.container,
+    spin: () => built.spin(),
+    spinCommand: cfg.spinCommand,
+    dispose: () => {
+      built.dispose();
+      built.container.remove();
+    },
+  };
 }
 
 // Module-scoped SE mount state, populated once StreamElements dispatches onWidgetLoad.
