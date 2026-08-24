@@ -246,6 +246,7 @@ function demoHtml() {
     <h1>Wheel Settings Playground</h1>
     <button id="spin" type="button">Spin the Wheel</button>
     <button id="share" type="button">Copy share link</button>
+    <button id="copy-config" type="button">Copy config code</button>
     <div id="share-status"></div>
     <a id="back" href="./index.html">instructions</a>
   </div>
@@ -819,21 +820,37 @@ function demoHtml() {
     if (currentHandle && currentHandle.spin) currentHandle.spin();
   });
 
-  document.getElementById("share").addEventListener("click", function () {
+  function copyToClipboard(text, okMsg) {
     var status = document.getElementById("share-status");
     if (!navigator.clipboard || !navigator.clipboard.writeText) {
       if (status) status.textContent = "Clipboard unavailable";
       return;
     }
-    navigator.clipboard.writeText(location.href).then(
+    navigator.clipboard.writeText(text).then(
       function () {
-        if (status) status.textContent = "Copied!";
-        setTimeout(function () { if (status) status.textContent = ""; }, 1500);
+        if (status) status.textContent = okMsg;
+        setTimeout(function () { if (status) status.textContent = ""; }, 1800);
       },
       function () {
         if (status) status.textContent = "Copy failed";
       },
     );
+  }
+
+  document.getElementById("share").addEventListener("click", function () {
+    copyToClipboard(location.href, "Share link copied!");
+  });
+
+  // The config code is the base64url after '#' -- the same value pasted into the widget's
+  // "Import config code" field to reproduce this exact setup in StreamElements.
+  document.getElementById("copy-config").addEventListener("click", function () {
+    var code = location.hash.replace(/^#/, "");
+    if (!code) {
+      var status = document.getElementById("share-status");
+      if (status) status.textContent = "All defaults -- no code needed";
+      return;
+    }
+    copyToClipboard(code, "Config code copied!");
   });
 
   remountWheel();

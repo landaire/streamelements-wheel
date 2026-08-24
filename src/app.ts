@@ -3,6 +3,7 @@ declare const __INLINE_CSS__: string;
 import type { WidgetLoadDetail } from "./se/types.js";
 import type { ConfigError } from "./config/errors.js";
 import { parseConfig } from "./config/parse.js";
+import { applyImportedConfig } from "./config/import.js";
 import { buildWidget } from "./app/builder.js";
 import { createController, type WheelController } from "./app/controller.js";
 import { onEventReceived, onWidgetLoad } from "./se/bootstrap.js";
@@ -43,7 +44,7 @@ export function mountWidget(
   opts: MountOpts = {},
 ): MountHandle | { error: ConfigError[] } {
   mountStyles(doc);
-  const parsed = parseConfig(detail.fieldData);
+  const parsed = parseConfig(applyImportedConfig(detail.fieldData));
   if (parsed.kind === "error") {
     renderConfigErrorPanel(doc, parsed.errors);
     return { error: parsed.errors };

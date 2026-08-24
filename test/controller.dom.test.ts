@@ -94,6 +94,22 @@ describe("WheelController.removeEntry / resetEntries", () => {
   });
 });
 
+describe("WheelController import config", () => {
+  function encode(obj: Record<string, unknown>): string {
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+    return b64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+  }
+
+  it("applies a pasted config code and still appends chat-added extras on top", () => {
+    const code = encode({ sliceEntries: "X, Y" });
+    // an individual sliceEntries is set too, but the import code is authoritative
+    const c = makeController({ importConfig: code, sliceEntries: "A, B, C" });
+    expect(c.entries()).toEqual(["X", "Y"]);
+    c.addEntry("Z", "viewer1");
+    expect(c.entries()).toEqual(["X", "Y", "Z"]);
+  });
+});
+
 describe("WheelController spin serialization", () => {
   it("defers a mid-spin rebuild until the spin settles, without interrupting it", async () => {
     const parent = document.createElement("div");

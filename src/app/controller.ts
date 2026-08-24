@@ -1,6 +1,7 @@
 import type { WidgetLoadDetail, EventReceivedDetail, ChatEventData, FieldData } from "../se/types.js";
 import type { ConfigError } from "../config/errors.js";
 import { parseConfig, type WheelConfig } from "../config/parse.js";
+import { applyImportedConfig } from "../config/import.js";
 import { parseAdvancedConfig, withExtraItems } from "../config/advanced.js";
 import { buildWidget, type BuiltWidget } from "./builder.js";
 import { hasSEApi } from "../se/bootstrap.js";
@@ -76,6 +77,9 @@ export function createController(
   detail: WidgetLoadDetail,
   opts: ControllerOpts = {},
 ): WheelController | { error: ConfigError[] } {
+  // A pasted config code is authoritative; resolve it once here so everything downstream
+  // (base config, slice entries, effective field data) reads the imported settings.
+  detail = { ...detail, fieldData: applyImportedConfig(detail.fieldData) };
   const baseParsed = parseConfig(detail.fieldData);
   if (baseParsed.kind === "error") return { error: baseParsed.errors };
   const baseCfg = baseParsed.value;
