@@ -25,8 +25,9 @@ describe("parseWheelCommand", () => {
   it("returns undefined for an unrecognized subcommand", () => {
     expect(parseWheelCommand("!wheel bogus", "!wheel")).toBeUndefined();
   });
-  it("returns undefined for the base command alone (no subcommand)", () => {
-    expect(parseWheelCommand("!wheel", "!wheel")).toBeUndefined();
+  it("the base command alone (no subcommand) spins", () => {
+    expect(parseWheelCommand("!wheel", "!wheel")).toEqual({ cmd: "spin" });
+    expect(parseWheelCommand("!wheel   ", "!wheel")).toEqual({ cmd: "spin" });
   });
   it("returns undefined for add/remove with no argument text", () => {
     expect(parseWheelCommand("!wheel add", "!wheel")).toBeUndefined();

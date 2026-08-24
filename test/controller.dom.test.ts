@@ -259,7 +259,7 @@ describe("WheelController with advancedConfig", () => {
 
   it("!wheel add via chat command still renders the extra", () => {
     const c = makeController({ advancedConfig: advanced, wheelCommand: "!wheel" });
-    c.handleChatMessage("!wheel add Tacos", chatData("mod1", true), "streamer");
+    c.handleChatMessage("!wheel add Tacos", chatData("streamer"), "streamer");
     expect(c.entries()).toEqual(["x", "Tacos"]);
   });
 

@@ -21,7 +21,8 @@ export function parseWheelCommand(text: string, baseCommand: string): WheelComma
 
   // Same length as base regardless of case, so slicing by base.length isolates the rest.
   const rest = normalized.slice(base.length).trim();
-  if (rest.length === 0) return undefined;
+  // Bare base command (e.g. "!wheel" with no subcommand) spins.
+  if (rest.length === 0) return { cmd: "spin" };
 
   const spaceIdx = rest.indexOf(" ");
   const sub = (spaceIdx === -1 ? rest : rest.slice(0, spaceIdx)).toLowerCase();
