@@ -31,20 +31,25 @@ describe("buildWheel", () => {
     expect(dom.entries[1]!.textContent).toContain("B");
   });
 
-  it("gives darker (even) slices a stroke and leaves odd slices without one, except the wrap slice on an odd count", () => {
+  it("tags slices even/odd and never strokes a wedge path (borders are separate seam lines)", () => {
     const dom = buildWheel(document, cfg);
-    const isOddCount = dom.slices.length % 2 === 1;
     dom.slices.forEach((path, i) => {
-      const isEven = i % 2 === 0;
-      const isLast = i === dom.slices.length - 1;
-      if (isEven) expect(path.classList.contains("slice-even")).toBe(true);
+      if (i % 2 === 0) expect(path.classList.contains("slice-even")).toBe(true);
       else expect(path.classList.contains("slice-odd")).toBe(true);
+      expect(path.style.stroke).toBe("");
+    });
+  });
 
-      // Bordered iff even AND not the wrap-adjacent last slice of an odd count, so
-      // borders never double at the seam between slice 0 and the last slice.
-      const bordered = isEven && !(isOddCount && isLast);
-      if (bordered) expect(path.style.stroke).not.toBe("");
-      else expect(path.style.stroke).toBe("");
+  it("draws exactly one divider line per slice boundary (no doubled borders)", () => {
+    const dom = buildWheel(document, cfg);
+    const svg = dom.wheel.querySelector(".wheel-svg")!;
+    const lines = svg.querySelectorAll("line");
+    // one radial divider per seam == one per slice
+    expect(lines.length).toBe(dom.slices.length);
+    lines.forEach((line) => {
+      expect(line.getAttribute("x1")).toBe("250");
+      expect(line.getAttribute("y1")).toBe("250");
+      expect(line.style.stroke).not.toBe("");
     });
   });
 

@@ -94,11 +94,6 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
     const a0 = (l.startTurn as number) * 360;
     const a1 = a0 + (l.sizeTurn as number) * 360;
     const isEven = i % 2 === 0;
-    // With an odd slice count, index 0 and the last index are both even AND adjacent
-    // at the wrap seam, so bordering both doubles the stroke there. Skip the last
-    // slice's border in that case to keep borders strictly alternating.
-    const isOddCount = laid.length % 2 === 1;
-    const bordered = isEven && !(isOddCount && i === laid.length - 1);
 
     const path = doc.createElementNS(SVG_NS, "path") as SVGPathElement;
     path.setAttribute("class", "slice slice-" + (isEven ? "even" : "odd"));
@@ -107,13 +102,6 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
     // even/odd scheme fill.
     const sliceColor = cfg.slices[i]!.color;
     path.setAttribute("fill", sliceColor ?? (isEven ? "var(--slice-bg-even)" : "var(--slice-bg-odd)"));
-    // Only bordered slices get a stroke; kept as the scheme border color (not derived
-    // from sliceColor) so borders stay a single consistent color across the wheel.
-    if (bordered) {
-      path.style.stroke = "var(--slice-border, #c76b7d)";
-      path.style.strokeWidth = "3";
-      path.style.strokeLinejoin = "round";
-    }
     svg.appendChild(path);
     slices.push(path);
 
@@ -125,6 +113,21 @@ export function buildWheel(doc: Document, cfg: WheelConfig): WheelDom {
     entry.appendChild(text);
     entryWrap.appendChild(entry);
     entries.push(entry);
+  });
+
+  // One divider per slice boundary, drawn as a radial line from the hub to the rim. Exactly
+  // one line per seam (never a per-slice outline), so borders can never double up regardless
+  // of slice count or weights.
+  laid.forEach((l) => {
+    const seam = pointOnCircle((l.startTurn as number) * 360);
+    const line = doc.createElementNS(SVG_NS, "line");
+    line.setAttribute("x1", String(CX));
+    line.setAttribute("y1", String(CY));
+    line.setAttribute("x2", String(seam.x));
+    line.setAttribute("y2", String(seam.y));
+    line.style.stroke = "var(--slice-border, #c76b7d)";
+    line.style.strokeWidth = "2.5";
+    svg.appendChild(line);
   });
 
   const setRotation = (deg: number): void => {
