@@ -820,10 +820,14 @@ function demoHtml() {
   }
   // The visual item list replaces the raw advancedConfig JSON in the playground.
   if (controls.advancedConfig) controls.advancedConfig.row.style.display = "none";
-  // Importing in the playground is done with "Paste config code" (which populates every
-  // control so you can then edit); the raw importConfig field would instead override the
-  // controls, so hide it here. Its group ("Import") then holds only the empty-state note.
-  if (controls.importConfig) controls.importConfig.row.style.display = "none";
+  // In the playground, the Import config code field loads the code into every control (via a
+  // reload) so you can then edit it, rather than overriding the controls at runtime. Pressing
+  // Enter applies it; collectFieldData drops the raw value so it never overrides the controls.
+  if (controls.importConfig) {
+    controls.importConfig.el.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && controls.importConfig.el.value.trim()) applyCode(controls.importConfig.el.value);
+    });
+  }
 
   var weightsBody = groupBody("Computed Slice Weights");
 
@@ -838,6 +842,9 @@ function demoHtml() {
     Object.keys(controls).forEach(function (key) {
       data[key] = readValue(controls[key]);
     });
+    // In the playground, importConfig is a load-into-editor trigger (see its Enter handler),
+    // not a runtime override -- so the individual controls always drive the preview.
+    data.importConfig = "";
     // Categories present -> two-level odds via advancedConfig. Otherwise the comma list
     // drives the wheel, and the item list is just its synced view: clear advancedConfig and
     // derive sliceEntries from the items.
