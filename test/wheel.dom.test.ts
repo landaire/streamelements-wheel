@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { parseConfig, type WheelConfig } from "../src/config/parse.js";
 import { buildWheel } from "../src/render/wheel.js";
-import { addChrome } from "../src/render/chrome.js";
+import { addChrome, labelBand } from "../src/render/chrome.js";
 import { buildWidget } from "../src/app/builder.js";
 import { layout, sliceAtAngle } from "../src/model/geometry.js";
 import { deg } from "../src/model/units.js";
@@ -208,8 +208,22 @@ describe("hub rendering", () => {
   });
 });
 
+describe("labelBand (hub-size aware label placement)", () => {
+  it("moves the label band outward and narrows it as the hub grows, always clearing the hub", () => {
+    const small = labelBand(22);
+    const big = labelBand(44);
+    expect(big.midR).toBeGreaterThan(small.midR); // labels move outward
+    expect(big.radialFrac).toBeLessThan(small.radialFrac); // band narrows
+    // Inner edge of the band clears the hub edge (hub radius as a fraction of R == hubSize/100).
+    for (const [pct, band] of [[22, small], [44, big]] as const) {
+      const inner = band.midR - band.radialFrac / 2;
+      expect(inner).toBeGreaterThanOrEqual(pct / 100);
+    }
+  });
+});
+
 describe("widget lifecycle", () => {
-  const okCfg = (fd: Record<string, unknown>): WheelConfig => {
+  const okCfg = (fd: Record<string, string>): WheelConfig => {
     const r = parseConfig(fd);
     if (r.kind !== "ok") throw new Error("bad cfg");
     return r.value;

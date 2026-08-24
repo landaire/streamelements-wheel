@@ -120,10 +120,12 @@ export function fitEntryText(
   R: number,
   maxPx: number = MAX_ENTRY_FONT_PX,
   minPx: number = MIN_ENTRY_FONT_PX,
+  midR: number = LABEL_MID_R,
+  radialFrac: number = LABEL_RADIAL,
 ): number {
   if (!R) return minPx;
-  const rText = LABEL_MID_R * R;
-  const radialLen = LABEL_RADIAL * R;
+  const rText = midR * R;
+  const radialLen = radialFrac * R;
   const tangentialWidth = 2 * rText * Math.sin(sizeTurn * Math.PI) * LABEL_TANGENT;
   textEl.style.maxWidth = radialLen + "px";
   let lo = minPx;
@@ -142,7 +144,22 @@ export function fitEntryText(
 // Refits every slice label, then unifies the size: the bulk of the labels share one common
 // size (the largest all of them fit), and only labels in much tighter wedges keep their own
 // smaller size. dom.container.clientWidth is 0 before attach or under jsdom, so this no-ops.
-export function refitEntries(dom: WheelDom, maxPx: number = MAX_ENTRY_FONT_PX, minPx: number = MIN_ENTRY_FONT_PX): void {
+// The radial band a slice label may occupy, derived from the hub size so labels always clear
+// a larger hub. Returns fractions of R: midR (band centre) and radialFrac (band width).
+export function labelBand(hubSizePct: number): { midR: number; radialFrac: number } {
+  const hubRadiusFrac = hubSizePct / 100; // hub width % of disc == hub radius as a fraction of R
+  const inner = Math.min(0.8, hubRadiusFrac + 0.04); // small clearance beyond the hub edge
+  const outer = 0.9; // stop short of the rim
+  return { midR: (inner + outer) / 2, radialFrac: outer - inner };
+}
+
+export function refitEntries(
+  dom: WheelDom,
+  maxPx: number = MAX_ENTRY_FONT_PX,
+  minPx: number = MIN_ENTRY_FONT_PX,
+  midR: number = LABEL_MID_R,
+  radialFrac: number = LABEL_RADIAL,
+): void {
   const R = dom.container.clientWidth / 2;
   if (!R) return;
   const els: HTMLElement[] = [];
@@ -152,7 +169,7 @@ export function refitEntries(dom: WheelDom, maxPx: number = MAX_ENTRY_FONT_PX, m
     if (!Number.isFinite(sizeTurn)) continue;
     const textEl = entry.querySelector<HTMLElement>(".entry-text");
     if (!textEl) continue;
-    fits.push(fitEntryText(textEl, sizeTurn, R, maxPx, minPx));
+    fits.push(fitEntryText(textEl, sizeTurn, R, maxPx, minPx, midR, radialFrac));
     els.push(textEl);
   }
   if (els.length === 0) return;
@@ -316,6 +333,10 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
 
   dom.container.style.setProperty("--title-font", cfg.titleFontSize + "px");
   dom.container.style.setProperty("--title-gap", cfg.titleGap + "px");
+  const band = labelBand(cfg.hubSize);
+  dom.container.style.setProperty("--hub-size", cfg.hubSize + "%");
+  // Label vertical anchor: radius midR from centre -> top = (1 - midR) * 50% of the disc.
+  dom.container.style.setProperty("--entry-top", (1 - band.midR) * 50 + "%");
   const titleWrap = el(doc, "title-wrap"); // sits above the headpiece/pointer
   const title = el(doc, "title-text");
   title.textContent = cfg.title;
@@ -365,7 +386,7 @@ export function addChrome(doc: Document, dom: WheelDom, cfg: WheelConfig): Chrom
     fitStage();
     resetPillWidth();
     if (fitTextEl) fitHubText(fitTextEl);
-    refitEntries(dom, cfg.labelSizeMax, cfg.labelSizeMin);
+    refitEntries(dom, cfg.labelSizeMax, cfg.labelSizeMin, band.midR, band.radialFrac);
   };
   refit();
   if (typeof window !== "undefined") {

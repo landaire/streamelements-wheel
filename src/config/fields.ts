@@ -75,6 +75,7 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "colorTitle", type: "colorpicker", label: "Title text", value: "#6f2f80", group: "Colors" },
   { key: "colorEntry", type: "colorpicker", label: "Label text", value: "#ffffff", group: "Colors" },
   { key: "hubMode", type: "dropdown", label: "Hub content", value: "icon", options: { icon: "Icon", image: "Image", text: "Text" }, group: "Center Hub" },
+  { key: "hubSize", type: "slider", label: "Hub size", value: 22, min: 14, max: 50, step: 1, group: "Center Hub", hint: "Diameter of the center hub as a percent of the wheel. Slice labels move outward to stay clear." },
   { key: "hubImage", type: "text", label: "Hub image URL", value: "", group: "Center Hub", accept: "image/*", hint: "Pick a file to embed it, or paste an image URL or a base64 data URL. Shown when Hub content = Image." },
   { key: "hubImageFill", type: "checkbox", label: "Fill hub to the border", value: true, group: "Center Hub", hint: "Cover the whole hub out to the rim. Off insets the image so the knob rim shows around it." },
   { key: "hubImageUnlocked", type: "checkbox", label: "Unlock hub image placement", value: false, group: "Center Hub", hint: "Locked (default) keeps the image covering the hub as you drag. Unlocked lets you move it anywhere, even clipping part of it under the wheel." },

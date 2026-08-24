@@ -121,10 +121,10 @@
   pointer-events: none;
 }
 .entry-text {
-  /* Centred at ~0.56R (the middle of the band between hub and rim) and grown symmetrically
-     by fitEntryText, so a bigger label never creeps into the centre hub. */
+  /* Centred in the band between the hub and rim (--entry-top is derived from the hub size)
+     and grown symmetrically by fitEntryText, so a bigger label never creeps into the hub. */
   position: absolute;
-  top: 22%;
+  top: var(--entry-top, 22%);
   left: 50%;
   transform: translate(-50%, -50%) rotate(90deg);
   transform-origin: center center;
@@ -148,7 +148,7 @@
 /* Flat concentric rings (outer deep-purple, mid lavender, inner light-pink coin bed)
    instead of a glossy 3D sphere. Ring stops are hard-edged percentages of the hub. */
 .centerpiece {
-  position: absolute; left: 50%; top: 50%; width: 22%; height: auto; aspect-ratio: 1 / 1;
+  position: absolute; left: 50%; top: 50%; width: var(--hub-size, 22%); height: auto; aspect-ratio: 1 / 1;
   transform: translate(-50%, -50%); border-radius: 50%;
   border: 4px solid var(--rim-color, #6f2f80);
   background: radial-gradient(

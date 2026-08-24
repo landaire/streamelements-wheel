@@ -40,6 +40,7 @@ export interface WheelConfig {
   scheme: ColorScheme;
   centerIcon: string;
   hubMode: HubMode;
+  hubSize: number; // hub diameter as a percent of the wheel
   hubImage: string;
   hubImageFill: boolean; // cover the hub out to the border vs inset with the rim showing
   hubImageUnlocked: boolean; // free placement: translate arbitrarily (may clip) vs coverage-preserving
@@ -181,6 +182,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       scheme: resolveScheme(fieldData),
       centerIcon: str(fieldData.centerIcon, FIELD_DEFAULTS.centerIcon as string),
       hubMode,
+      hubSize: Math.max(14, Math.min(50, num(fieldData.hubSize, FIELD_DEFAULTS.hubSize as number))),
       hubImage: str(fieldData.hubImage, FIELD_DEFAULTS.hubImage as string),
       hubImageFill: bool(fieldData.hubImageFill, FIELD_DEFAULTS.hubImageFill as boolean),
       hubImageUnlocked: bool(fieldData.hubImageUnlocked, FIELD_DEFAULTS.hubImageUnlocked as boolean),
