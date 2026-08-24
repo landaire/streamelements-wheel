@@ -39,81 +39,56 @@ if (serve) {
   await ctx.watch();
 } else {
   await esbuild.build(opts);
-  writeFileSync("dist/index.html", landingHtml());
-  writeFileSync("dist/demo.html", demoHtml());
+  // The playground is the landing page; instructions live in a popup inside it.
+  writeFileSync("dist/index.html", demoHtml());
+  // Keep old links working: demo.html now redirects to the playground at index.html.
+  writeFileSync("dist/demo.html", '<!doctype html><meta charset="utf-8"><meta http-equiv="refresh" content="0; url=./index.html"><title>Spinning Wheel</title><a href="./index.html">Spinning Wheel playground</a>');
 }
 
-// Landing page: plain operating-manual style. No color, no salesmanship.
-function landingHtml() {
-  return `<!doctype html>
-<html lang="en"><head><meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Spinning Wheel - Instructions</title>
-<style>
-  html { background: #d9d9d0; }
-  body { color: #111; background: #d9d9d0; font-family: "Courier New", Courier, monospace; margin: 0; padding: 24px; line-height: 1.5; }
-  main { max-width: 660px; margin: 0 auto; background: #fbfbf5; border: 2px solid #111; padding: 26px 32px 34px; }
-  h1 { font-size: 20px; letter-spacing: 3px; margin: 0 0 4px; }
-  .sub { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 18px; }
-  h2 { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin: 24px 0 6px; border-top: 1px solid #a9a9a0; padding-top: 14px; }
-  ol, ul { margin: 6px 0 6px; padding-left: 22px; }
-  li { margin: 4px 0; }
-  code { background: #ecece4; border: 1px solid #c9c9c0; padding: 0 3px; }
-  a { color: #111; }
-  p { margin: 6px 0; }
-  .fig { border: 1px solid #111; padding: 10px 12px; margin: 12px 0; font-size: 13px; }
-</style>
-</head><body>
-<main>
+// Instructions shown in the playground's popup. Plain operating-manual style, no
+// salesmanship. The boilerplate block is filled in by the page from the live config code.
+function instructionsInner() {
+  return `
   <h1>SPINNING WHEEL</h1>
   <div class="sub">StreamElements Custom Widget - Operating Instructions</div>
 
   <h2>1. Description</h2>
   <p>A wheel of weighted choices. Enter choices, spin, the pointer lands on one.
-  Where it lands is where it lands: with magnetism off, the wheel can stop on the
-  line between two choices. That counts as no result and requires another spin.</p>
+  With magnetism off the wheel can stop on the line between two choices; that counts
+  as no result and calls for another spin.</p>
 
-  <h2>2. Files</h2>
-  <ul>
-    <li><a href="./wheel.js">wheel.js</a> - the widget program.</li>
-    <li><a href="./fields.json">fields.json</a> - the settings definition.</li>
-  </ul>
-  <p>Open each link, then use your browser's Save As, or select all and copy.</p>
-
-  <h2>3. Demo</h2>
-  <p>Open the <a href="./demo.html">demo page</a> to see the wheel and spin it.</p>
-
-  <h2>4. Install</h2>
+  <h2>2. Install</h2>
   <ol>
-    <li>In StreamElements, open Streaming Tools, then My Overlays. Edit an overlay.</li>
-    <li>Click Add Widget, then Static / Custom, then Custom Widget.</li>
-    <li>Open the widget editor. Select the JS tab. Remove its contents and paste all of <code>wheel.js</code>.</li>
-    <li>Select the Fields tab. Open its code (JSON) editor and paste all of <code>fields.json</code>.</li>
+    <li>In StreamElements, open an overlay and add a Custom Widget.</li>
+    <li>Open the widget editor. In every tab -- HTML, CSS, JS, Fields, Data -- delete all of the contents.</li>
+    <li>Paste the boilerplate below into the HTML tab.</li>
     <li>Save the widget.</li>
-    <li>Configure the wheel in the Settings/Fields panel.</li>
   </ol>
+  <div class="fig">
+    <div class="fig-head"><span>Boilerplate</span><button id="copy-boilerplate" type="button" class="mono-btn">Copy</button></div>
+    <pre id="boilerplate-code" class="code-block"></pre>
+  </div>
 
-  <h2>5. Spinning</h2>
-  <p>As the broadcaster or a moderator, type the spin command in chat.
-  Default: <code>!spin</code>. Change it in the Fields panel (Spin command).</p>
+  <h2>3. Configure</h2>
+  <p>Build the look you want in this playground, then press <b>Copy config code</b> in the
+  panel. The Copy button above bakes that code into the boilerplate for you. To change the
+  wheel later, edit here, copy again, and paste the new boilerplate. An empty code shows the
+  default wheel.</p>
 
-  <h2>6. Settings</h2>
+  <h2>4. Spinning</h2>
   <ul>
-    <li>Slices: a comma-separated list. Weight a choice with <code>[n]</code> or <code>[n%]</code>, for example <code>Song request [5%]</code>.</li>
-    <li>Magnetism: off = raw landing (may land between two choices, then re-spin). on = snap to the landed choice's center.</li>
-    <li>Seam band: the width, in degrees, of the on-the-line zone when magnetism is off.</li>
-    <li>Also: spin duration, countdown, title, color scheme, center icon, sounds, confetti.</li>
+    <li><code>!wheel</code> spins the wheel.</li>
+    <li><code>!wheel add &lt;text&gt;</code>, <code>!wheel remove &lt;text&gt;</code>, <code>!wheel reset</code>, <code>!wheel list</code>.</li>
+    <li>Only the broadcaster may use these by default. Widen it with Command permission in the config.</li>
   </ul>
 
-  <h2>7. Notes</h2>
+  <h2>5. Notes</h2>
   <ul>
     <li>Runs entirely in the browser. Nothing to host; no server.</li>
-    <li>The chat trigger has not been tested against a live StreamElements session. Verify it on your channel; adjust the command if moderator status is reported differently on your platform.</li>
-    <li>This is the core wheel. Event triggers (goals, points, channel points, giveaways, danger slices) are not included yet.</li>
+    <li>Works as an OBS Browser Source too: save the boilerplate as an .html file and point a source at it. Click the wheel to spin.</li>
+    <li>The chat trigger is not verified against a live StreamElements session. Confirm it on your channel.</li>
   </ul>
-</main>
-</body></html>
-`;
+  `;
 }
 
 // Hosted demo page for GitHub Pages: root-relative ./wheel.js. A settings playground --
@@ -128,7 +103,7 @@ function demoHtml() {
   * { box-sizing: border-box; }
   html, body { margin: 0; min-height: 100vh; background: #1b1b22; }
   body {
-    padding-left: 380px;
+    padding-left: 440px;
     display: grid;
     place-items: center;
     font-family: sans-serif;
@@ -138,7 +113,7 @@ function demoHtml() {
     position: fixed;
     top: 0;
     left: 0;
-    width: 380px;
+    width: 440px;
     height: 100vh;
     overflow-y: auto;
     background: rgba(24, 22, 30, 0.92);
@@ -239,18 +214,69 @@ function demoHtml() {
   .ed-add-row { display: flex; gap: 8px; margin-top: 4px; }
   .ed-add-btn { flex: 1; background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 6px; padding: 8px 10px; font-size: 12px; cursor: pointer; }
   .ed-add-btn:hover { background: #35323f; }
+  /* Outline: quick-jump chips to each settings group. */
+  #outline { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 10px; }
+  .outline-chip { background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 999px; padding: 3px 9px; font-size: 11px; cursor: pointer; }
+  .outline-chip:hover { background: #35323f; color: #fff; }
+  /* Collapsible groups. */
+  .f-group h3 { display: flex; align-items: center; justify-content: space-between; cursor: pointer; user-select: none; }
+  .f-group h3 .chev { width: 0; height: 0; border-left: 4px solid transparent; border-right: 4px solid transparent; border-top: 5px solid currentColor; opacity: 0.7; transition: transform 0.15s; flex: none; }
+  .f-group.collapsed h3 .chev { transform: rotate(-90deg); }
+  .f-group.collapsed .f-group-body { display: none; }
+  /* Share bar: config URL + code with actions. */
+  #share-bar { margin-top: 12px; display: grid; gap: 5px; }
+  #share-bar label { font-size: 10px; letter-spacing: 0.5px; text-transform: uppercase; color: #8b88a8; }
+  #share-bar input { width: 100%; background: #2a2836; color: #f1f0f7; border: 1px solid #4a4760; border-radius: 5px; padding: 6px 8px; font-size: 12px; font-family: "Courier New", Courier, monospace; }
+  .share-actions { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 2px; }
+  .act-btn { flex: 1 1 auto; background: #2a2836; color: #cfcde0; border: 1px solid #4a4760; border-radius: 7px; padding: 7px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+  .act-btn:hover { background: #35323f; color: #fff; }
+  .act-btn.primary { background: #6b4bd8; color: #fff; border-color: #6b4bd8; }
+  .act-btn.primary:hover { background: #7a5be6; }
+  #open-instructions { background: none; color: #b8bdd6; border: none; font-family: monospace; font-size: 12px; cursor: pointer; text-decoration: underline; padding: 0; margin-top: 10px; }
+  /* Instructions popup. */
+  #modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding: 40px 16px; overflow-y: auto; }
+  #modal-overlay.hidden { display: none; }
+  #modal { max-width: 680px; width: 100%; background: #fbfbf5; color: #111; border: 2px solid #111; font-family: "Courier New", Courier, monospace; line-height: 1.5; padding: 26px 32px 34px; position: relative; }
+  #modal h1 { font-size: 20px; letter-spacing: 3px; margin: 0 0 4px; }
+  #modal .sub { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 18px; }
+  #modal h2 { font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin: 24px 0 6px; border-top: 1px solid #a9a9a0; padding-top: 14px; }
+  #modal ol, #modal ul { margin: 6px 0; padding-left: 22px; }
+  #modal li { margin: 4px 0; }
+  #modal p { margin: 6px 0; }
+  #modal code { background: #ecece4; border: 1px solid #c9c9c0; padding: 0 3px; }
+  #modal .fig { border: 1px solid #111; padding: 10px 12px; margin: 12px 0; }
+  #modal .fig-head { display: flex; align-items: center; justify-content: space-between; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+  #modal .code-block { margin: 0; white-space: pre-wrap; word-break: break-all; font-size: 12px; background: #ecece4; border: 1px solid #c9c9c0; padding: 8px; }
+  #modal .mono-btn { font-family: inherit; font-size: 11px; background: #111; color: #fbfbf5; border: none; padding: 3px 10px; cursor: pointer; }
+  #modal-close { position: absolute; top: 10px; right: 12px; background: #111; color: #fbfbf5; border: none; font-family: inherit; font-size: 12px; padding: 4px 10px; cursor: pointer; }
 </style>
 </head><body>
 <div id="panel">
   <div id="panel-head">
     <h1>Wheel Settings Playground</h1>
     <button id="spin" type="button">Spin the Wheel</button>
-    <button id="share" type="button">Copy share link</button>
-    <button id="copy-config" type="button">Copy config code</button>
-    <div id="share-status"></div>
-    <a id="back" href="./index.html">instructions</a>
+    <div id="share-bar">
+      <label for="config-url">Config URL</label>
+      <input id="config-url" type="text" spellcheck="false" placeholder="paste a URL, press Enter to load" />
+      <label for="config-code">Config code</label>
+      <input id="config-code" type="text" spellcheck="false" placeholder="(all defaults)" />
+      <div class="share-actions">
+        <button id="copy-config" type="button" class="act-btn primary">Copy config code</button>
+        <button id="paste-config" type="button" class="act-btn primary">Paste config code</button>
+        <button id="share" type="button" class="act-btn">Copy share link</button>
+      </div>
+      <div id="share-status"></div>
+    </div>
+    <div id="outline"></div>
+    <button id="open-instructions" type="button">How to install in StreamElements</button>
   </div>
   <div id="panel-body"></div>
+</div>
+<div id="modal-overlay" class="hidden">
+  <div id="modal">
+    <button id="modal-close" type="button">Close</button>
+    ${instructionsInner()}
+  </div>
 </div>
 <script src="./wheel.js"></script>
 <script>
@@ -348,17 +374,31 @@ function demoHtml() {
     return d;
   }
 
+  var groupOrder = [];
+  function groupSlug(name) {
+    return "group-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  }
   function groupBody(name) {
     if (groupBodies[name]) return groupBodies[name];
     var wrap = document.createElement("div");
     wrap.className = "f-group";
+    wrap.id = groupSlug(name);
     var h = document.createElement("h3");
-    h.textContent = name;
+    var label = document.createElement("span");
+    label.textContent = name;
+    var chev = document.createElement("span");
+    chev.className = "chev";
+    h.appendChild(label);
+    h.appendChild(chev);
+    // Click the header to collapse/expand the group.
+    h.addEventListener("click", function () { wrap.classList.toggle("collapsed"); });
     wrap.appendChild(h);
     var body = document.createElement("div");
+    body.className = "f-group-body";
     wrap.appendChild(body);
     panelBody.appendChild(wrap);
     groupBodies[name] = body;
+    groupOrder.push(name);
     return body;
   }
 
@@ -814,6 +854,7 @@ function demoHtml() {
     currentHandle = result && "spin" in result ? result : null;
     renderWeights(fieldData);
     syncHash(fieldData);
+    updateShareBar();
   }
 
   document.getElementById("spin").addEventListener("click", function () {
@@ -837,12 +878,41 @@ function demoHtml() {
     );
   }
 
+  // The one-paste StreamElements install: a config code baked into the loader boilerplate.
+  function boilerplateText(code) {
+    return '<script>\\n  window.WHEEL_CONFIG = "' + code + '";\\n<\\/script>\\n<script src="https://landaire.github.io/streamelements-wheel/wheel.js"><\\/script>';
+  }
+
+  // Extracts the base64url code from a raw code or a full URL (anything after the last '#').
+  function normalizeCode(input) {
+    var s = (input || "").trim();
+    var h = s.lastIndexOf("#");
+    return h >= 0 ? s.slice(h + 1) : s;
+  }
+
+  // Loads a config code by putting it in the hash and reloading, so every control and the
+  // visual editor rehydrate through the same path a shared link uses.
+  function applyCode(input) {
+    var code = normalizeCode(input);
+    if (code) location.hash = "#" + code;
+    else history.replaceState(null, "", location.pathname + location.search);
+    location.reload();
+  }
+
+  function updateShareBar() {
+    var code = location.hash.replace(/^#/, "");
+    var urlEl = document.getElementById("config-url");
+    var codeEl = document.getElementById("config-code");
+    var bpEl = document.getElementById("boilerplate-code");
+    if (urlEl && document.activeElement !== urlEl) urlEl.value = location.href;
+    if (codeEl && document.activeElement !== codeEl) codeEl.value = code;
+    if (bpEl) bpEl.textContent = boilerplateText(code);
+  }
+
   document.getElementById("share").addEventListener("click", function () {
     copyToClipboard(location.href, "Share link copied!");
   });
 
-  // The config code is the base64url after '#' -- the same value pasted into the widget's
-  // "Import config code" field to reproduce this exact setup in StreamElements.
   document.getElementById("copy-config").addEventListener("click", function () {
     var code = location.hash.replace(/^#/, "");
     if (!code) {
@@ -853,6 +923,67 @@ function demoHtml() {
     copyToClipboard(code, "Config code copied!");
   });
 
+  document.getElementById("paste-config").addEventListener("click", function () {
+    var status = document.getElementById("share-status");
+    var fromField = document.getElementById("config-code").value.trim();
+    if (navigator.clipboard && navigator.clipboard.readText) {
+      navigator.clipboard.readText().then(
+        function (text) { applyCode(text || fromField); },
+        function () {
+          if (fromField) applyCode(fromField);
+          else if (status) status.textContent = "Clipboard blocked -- paste into the code box, press Enter";
+        }
+      );
+    } else if (fromField) {
+      applyCode(fromField);
+    } else if (status) {
+      status.textContent = "Paste the code into the box, press Enter";
+    }
+  });
+
+  document.getElementById("config-code").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") applyCode(this.value);
+  });
+  document.getElementById("config-url").addEventListener("keydown", function (e) {
+    if (e.key === "Enter") applyCode(this.value);
+  });
+
+  // Instructions popup.
+  var overlay = document.getElementById("modal-overlay");
+  document.getElementById("open-instructions").addEventListener("click", function () {
+    updateShareBar();
+    overlay.classList.remove("hidden");
+  });
+  document.getElementById("modal-close").addEventListener("click", function () {
+    overlay.classList.add("hidden");
+  });
+  overlay.addEventListener("click", function (e) {
+    if (e.target === overlay) overlay.classList.add("hidden");
+  });
+  document.getElementById("copy-boilerplate").addEventListener("click", function () {
+    copyToClipboard(boilerplateText(location.hash.replace(/^#/, "")), "Boilerplate copied!");
+  });
+
+  // Outline: quick-jump chips to each settings group.
+  function buildOutline() {
+    var outline = document.getElementById("outline");
+    outline.innerHTML = "";
+    groupOrder.forEach(function (name) {
+      var chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "outline-chip";
+      chip.textContent = name;
+      chip.addEventListener("click", function () {
+        var el = document.getElementById(groupSlug(name));
+        if (!el) return;
+        el.classList.remove("collapsed");
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+      outline.appendChild(chip);
+    });
+  }
+
+  buildOutline();
   remountWheel();
 })();
 </script>
