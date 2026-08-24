@@ -16,6 +16,7 @@ export interface WheelConfig {
   scale: number;
   style: WheelStyle;
   title: string;
+  fontFamily: string;
   slices: Slice[];
   spinDurationSec: number;
   countdownSec: number;
@@ -128,6 +129,7 @@ export function parseConfig(fieldData: FieldData): Parsed<WheelConfig> {
       scale: num(fieldData.scaleWidget, FIELD_DEFAULTS.scaleWidget as number),
       style,
       title: str(fieldData.wheelTitle, FIELD_DEFAULTS.wheelTitle as string),
+      fontFamily: str(fieldData.fontFamily, FIELD_DEFAULTS.fontFamily as string).trim(),
       slices,
       spinDurationSec: num(fieldData.spinDuration, FIELD_DEFAULTS.spinDuration as number),
       countdownSec: num(fieldData.countdownTime, FIELD_DEFAULTS.countdownTime as number),

@@ -10,6 +10,23 @@ import type { Rng } from "../model/spin.js";
 // Default confetti palette; configurable in a later phase.
 const CONFETTI_COLORS: [string, string, string] = ["#ffc3ce", "#f8acbb", "#ffe3c3"];
 
+// Loads a Google Fonts family by name (idempotent per family). No-op for a blank family
+// or when there is no document head (jsdom without a head, headless probes).
+function ensureFontLoaded(doc: Document, family: string): void {
+  const name = family.trim();
+  if (name.length === 0 || !doc.head) return;
+  const id = "wheel-font-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
+  if (doc.getElementById(id)) return;
+  const link = doc.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href =
+    "https://fonts.googleapis.com/css2?family=" +
+    encodeURIComponent(name).replace(/%20/g, "+") +
+    ":wght@400;700;800&display=swap";
+  doc.head.appendChild(link);
+}
+
 export interface BuildOpts {
   rng?: Rng;
   audioCtxFactory?: () => AudioContext;
@@ -41,6 +58,10 @@ export function buildWidget(doc: Document, cfg: WheelConfig, opts: BuildOpts = {
   // Apply the resolved color scheme's CSS variables onto the container (named palette
   // or custom fields); overrides the :root fallback.
   for (const [k, v] of Object.entries(cfg.scheme.vars)) dom.container.style.setProperty(k, v);
+
+  // Load and apply the configured font; a blank family keeps the CSS system fallback.
+  ensureFontLoaded(doc, cfg.fontFamily);
+  if (cfg.fontFamily.length > 0) dom.container.style.setProperty("--wheel-font", cfg.fontFamily);
 
   const initialRotationDeg = opts.initialRotationDeg ?? 0;
   if (initialRotationDeg !== 0) dom.setRotation(initialRotationDeg);

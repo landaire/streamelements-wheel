@@ -19,6 +19,7 @@ export const FIELD_DEFS: readonly FieldDef[] = [
   { key: "scaleWidget", type: "slider", label: "Widget scale", value: 1, min: 0.5, max: 3, step: 0.1, group: "Wheel Settings" },
   { key: "wheelStyle", type: "dropdown", label: "Wheel style", value: "fullwheel", options: { halfwheel: "Half Wheel", fullwheel: "Full Wheel" }, group: "Wheel Settings" },
   { key: "wheelTitle", type: "text", label: "Title", value: "50 points to spin", group: "Wheel Settings" },
+  { key: "fontFamily", type: "text", label: "Font", value: "Nunito", group: "Wheel Settings", hint: "Any Google Fonts family name (loaded automatically). Blank falls back to the system sans-serif." },
   { key: "sliceEntries", type: "text", label: "Slices (comma list, [n] or [n%] = weight)", value: "Eat a lemon, Song request [5%], Ranked games, Draw subs [10]", group: "Wheel Slices" },
   {
     key: "normalizeWeights",
